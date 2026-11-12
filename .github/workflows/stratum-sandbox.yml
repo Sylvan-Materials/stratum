@@ -74,13 +74,46 @@ jobs:
             cp scratchpad/raw_output.txt scratchpad/generated_graph.hpp
           fi
 
-      - name: Verify C++ Syntax (Non-Blocking)
+      - name: Fetch Ephemeral doctest.h Header
+        run: |
+          curl -sSL --fail -o scratchpad/doctest.h \
+            "https://githubusercontent.com"
+
+      - name: Synthesize Ephemeral doctest Suite (Context-Aware)
+        run: |
+          # Combine the test stratum rules with the freshly synthesized C++ header
+          cat test/sandbox/adjacency-list-tests-prompt.md > scratchpad/combined_test_prompt.md
+          printf "\n\n## Synthesized Target Header (`generated_graph.hpp`)\nWrite doctest cases strictly against the exact signatures defined below:\n```cpp\n" >> scratchpad/combined_test_prompt.md
+          cat scratchpad/generated_graph.hpp >> scratchpad/combined_test_prompt.md
+          printf "\n```\n" >> scratchpad/combined_test_prompt.md
+
+          ./llama.cpp/build/bin/llama-cli \
+            -m ".cache/models/$MODEL_FILE" \
+            -f scratchpad/combined_test_prompt.md \
+            -st \
+            --log-disable \
+            --no-display-prompt \
+            -t $(nproc) \
+            -c 8192 \
+            > scratchpad/raw_test_output.txt
+
+          awk '/^```cpp/{flag=1; next} /^```/{flag=0} flag' scratchpad/raw_test_output.txt > scratchpad/test_graph.cpp
+          if [ ! -s scratchpad/test_graph.cpp ]; then
+            cp scratchpad/raw_test_output.txt scratchpad/test_graph.cpp
+          fi
+
+      - name: Compile and Run Synthesized doctest Suite
         continue-on-error: true
         run: |
-          g++ -fsyntax-only -std=c++2c -Wall -Wextra -pedantic scratchpad/generated_graph.hpp
-      - name: Upload Ephemeral Output for Human Validation
+          g++ -std=c++2c -Wall -Wextra -pedantic -Iscratchpad \
+            scratchpad/test_graph.cpp -o scratchpad/run_tests
+          ./scratchpad/run_tests
+
+      - name: Upload Ephemeral Outputs for Human Validation
         uses: actions/upload-artifact@v4
         with:
           name: ephemeral-cpp-stratum-output
-          path: scratchpad/generated_graph.hpp
+          path: |
+            scratchpad/generated_graph.hpp
+            scratchpad/test_graph.cpp
           retention-days: 7
