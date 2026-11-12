@@ -72,6 +72,8 @@ jobs:
             -m ".cache/models/${{ env.MODEL_FILE }}" \
             -f test/sandbox/adjacency-list-prompt.md \
             -st \
+            --temp 0.0 \
+            --seed 42 \
             --log-disable \
             --no-display-prompt \
             -t $(nproc) \
@@ -112,6 +114,8 @@ jobs:
             -m ".cache/models/$MODEL_FILE" \
             -f scratchpad/combined_test_prompt.md \
             -st \
+            --temp 0.0 \
+            --seed 42 \
             --log-disable \
             --no-display-prompt \
             -t $(nproc) \
