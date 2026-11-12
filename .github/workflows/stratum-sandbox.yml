@@ -62,10 +62,17 @@ jobs:
             -m ".cache/models/${{ env.MODEL_FILE }}" \
             -f test/sandbox/adjacency-list-prompt.md \
             -st \
+            --log-disable \
             --no-display-prompt \
             -t $(nproc) \
             -c 4096 \
-            > scratchpad/generated_graph.hpp
+            > scratchpad/raw_output.txt
+
+          # Extract everything between ```cpp and ``` (or fallback to raw output if no fences)
+          awk '/^```cpp/{flag=1; next} /^```/{flag=0} flag' scratchpad/raw_output.txt > scratchpad/generated_graph.hpp
+          if [ ! -s scratchpad/generated_graph.hpp ]; then
+            cp scratchpad/raw_output.txt scratchpad/generated_graph.hpp
+          fi
 
       - name: Verify C++ Syntax (Non-Blocking)
         continue-on-error: true

@@ -28,4 +28,4 @@ You are the Stratum Automation Code Generator. Translate the following abstract 
   ```
 
 ## 4. Output Instruction
-Emit ONLY the raw C++ code enclosed within header guard defines. Do not include conversational remarks or explanations.
+Emit ONLY a single ```cpp code block containing the raw C++ header enclosed within header guard defines. Do not include conversational remarks or explanations before or after the block.
