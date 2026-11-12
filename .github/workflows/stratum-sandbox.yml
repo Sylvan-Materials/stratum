@@ -1,0 +1,73 @@
+name: Stratum Sandbox Prototype
+
+on:
+  push:
+    paths:
+      - 'test/sandbox/**'
+      - '.github/workflows/stratum-sandbox.yml'
+
+env:
+  MODEL_REPO: Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF
+  MODEL_FILE: qwen2.5-coder-1.5b-instruct-q4_k_m.gguf
+  LLAMA_CPP_REF: master
+
+jobs:
+  verify-cycle:
+    runs-on: ubuntu-latest
+    container:
+      # Using a cutting-edge GCC container to catch modern standard features
+      image: gcc:latest 
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Cache Compiled llama-cli
+        id: cache-llama-bin
+        uses: actions/cache@v4
+        with:
+          path: llama.cpp/build/bin
+          key: llama-cli-${{ runner.os }}-${{ env.LLAMA_CPP_REF }}
+
+      - name: Build llama-cli (Cache Miss Only)
+        if: steps.cache-llama-bin.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth 1 --branch ${{ env.LLAMA_CPP_REF }} https://github.com
+          cmake -S llama.cpp -B llama.cpp/build \
+            -DLLAMA_BUILD_EXAMPLES=OFF \
+            -DLLAMA_BUILD_TOOLS=ON \
+            -DLLAMA_BUILD_TESTS=OFF
+          cmake --build llama.cpp/build --target llama-cli -j$(nproc)
+
+      - name: Cache GGUF Model
+        id: cache-model
+        uses: actions/cache@v4
+        with:
+          path: .cache/models
+          key: gguf-${{ env.MODEL_FILE }}
+
+      - name: Download GGUF Model (Cache Miss Only)
+        if: steps.cache-model.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .cache/models
+          curl -L --fail -o ".cache/models/${{ env.MODEL_FILE }}" \
+            "https://huggingface.co{{ env.MODEL_REPO }}/resolve/main/${{ env.MODEL_FILE }}"
+
+      - name: Execute Stratum Prompt Layer
+        run: |
+          mkdir -p scratchpad
+          ./llama.cpp/build/bin/llama-cli \
+            -m ".cache/models/${{ env.MODEL_FILE }}" \
+            -f test/sandbox/adjacency-list-prompt.md \
+            -st \
+            --no-display-prompt \
+            -t $(nproc) \
+            -c 4096 \
+            > scratchpad/generated_graph.hpp
+
+      - name: Upload Ephemeral Output for Human Validation
+        uses: actions/upload-artifact@v4
+        with:
+          name: ephemeral-cpp-stratum-output
+          path: scratchpad/generated_graph.hpp
+          retention-days: 7

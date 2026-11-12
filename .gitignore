@@ -1,0 +1,21 @@
+# ====================================================================
+# Stratum Ephemeral & Transient Fallout Exclusions
+# ====================================================================
+
+# The Generation Inbox (Never track raw AI drops)
+pipeline/stage/
+
+# Performance Telemetry & Raw Compiler Outputs
+scratchpad/output/
+*.s
+*.o
+*.gch
+
+# Build Sandboxes & Local Testing Caches
+build/
+.cmake/
+.vscode/
+
+# Node/Bun execution lockfiles if running local JS scripts
+node_modules/
+bun.lock

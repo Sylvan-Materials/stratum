@@ -1,0 +1,8 @@
+{
+  "name": "stratum",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {
+    "doctest": "github:onqtam/doctest"
+  }
+}
