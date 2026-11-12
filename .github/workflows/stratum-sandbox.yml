@@ -86,7 +86,9 @@ jobs:
       - name: Verify Portable C++ Syntax (Clang)
         continue-on-error: true
         run: |
-          clang++ -fsyntax-only -x c++-header -std=c++2c -Wall -Wextra -pedantic scratchpad/generated_graph.hpp
+          set -o pipefail
+          echo "=== CLANG++ SYNTAX CHECK ===" > scratchpad/validation.log
+          clang++ -fsyntax-only -x c++-header -std=c++2c -Wall -Wextra -pedantic scratchpad/generated_graph.hpp 2>&1 | tee -a scratchpad/validation.log
 
       - name: Fetch Ephemeral doctest.h Header
         run: |
@@ -124,13 +126,15 @@ jobs:
       - name: Compile and Run Synthesized doctest Suite
         continue-on-error: true
         run: |
+          set -o pipefail
+          echo -e "\n=== G++ COMPILE & ASAN/UBSAN TEST RUN ===" >> scratchpad/validation.log
           g++ -std=c++2c -O1 -g \
             -fsanitize=address,undefined \
             -fno-omit-frame-pointer \
             -Wall -Wextra -pedantic \
             -Iscratchpad \
-            scratchpad/test_graph.cpp -o scratchpad/run_tests
-          ./scratchpad/run_tests
+            scratchpad/test_graph.cpp -o scratchpad/run_tests 2>&1 | tee -a scratchpad/validation.log
+          ./scratchpad/run_tests 2>&1 | tee -a scratchpad/validation.log
 
       - name: Upload Ephemeral Outputs for Human Validation
         uses: actions/upload-artifact@v4
@@ -139,4 +143,5 @@ jobs:
           path: |
             scratchpad/generated_graph.hpp
             scratchpad/test_graph.cpp
+            scratchpad/validation.log
           retention-days: 7
