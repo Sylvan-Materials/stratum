@@ -22,7 +22,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - nname: Install Clang for Cross-Compiler Check
+      - name: Install Clang for Cross-Compiler Check
         run: apt-get update && apt-get install -y --no-install-recommends clang
 
       - name: Cache Compiled llama-cli
