@@ -34,7 +34,7 @@ jobs:
         run: |
           if ! command -v clang++ &> /dev/null || ! command -v cmake &> /dev/null; then
             apt-get update
-            apt-get install -y --no-install-recommends cmake build-essential lclang ibcurl4-openssl-dev
+            apt-get install -y --no-install-recommends cmake build-essential clang libcurl4-openssl-dev
           fi
           git clone --depth 1 --branch ${{ env.LLAMA_CPP_REF }} https://github.com/ggml-org/llama.cpp.git
           cmake -S llama.cpp -B llama.cpp/build \

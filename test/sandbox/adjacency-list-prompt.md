@@ -8,7 +8,14 @@ You are the Stratum Automation Code Generator. Translate the following abstract 
 - EXPLICIT TRAILING RETURNS: Every function template must define explicit trailing return types or absolute return type parameters. No deduced return markers.
 - EXPLICIT STANDARD HEADERS: Explicitly `#include` every standard library header required by the types used (e.g., `<vector>`, `<cstdint>`, `<utility>`, `<concepts>`). Never assume headers are transitively included.
 - DEPENDENT TEMPLATE DISAMBIGUATION: When invoking member function templates on dependent template parameter types, always use the `.template` disambiguator keyword (e.g., `record.template get<0>()`).
-- EXPLICIT CONCEPT QUALIFICATION: Always fully qualify concept names across nested namespaces (e.g., `stratum::concepts::vertex_identifiable<V>`), never assuming unqualified lookup across sibling or child namespaces.
+- **Single Flat Namespace:** Declare all CPO Niebloids (`vertex_id`, `neighbors`), concepts (`vertex_identifiable`, `adjacency_list`), and reference containers (`AdjacencyList`) directly inside `namespace stratum`. Do NOT create nested sub-namespaces like `stratum::cpo` or `stratum::concepts`.
+- **Declaration Order:** Define concepts and CPOs strictly in dependency order before any class or template that constrains against them:
+  1. `vertex_id` Niebloid CPO
+  2. `vertex_identifiable` concept
+  3. `neighbors` Niebloid CPO
+  4. `adjacency_list` concept
+  5. `AdjacencyList` reference container
+
 
 
 ## 2. Target Component Archetype
