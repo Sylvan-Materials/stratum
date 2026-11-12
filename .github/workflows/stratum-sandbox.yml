@@ -132,7 +132,7 @@ jobs:
             -fsanitize=address,undefined \
             -fno-omit-frame-pointer \
             -Wall -Wextra -pedantic \
-            -Iscratchpad \
+            -Iscratchpad -Iscratchpad/doctest \
             scratchpad/test_graph.cpp -o scratchpad/run_tests 2>&1 | tee -a scratchpad/validation.log
           ./scratchpad/run_tests 2>&1 | tee -a scratchpad/validation.log
 
