@@ -81,11 +81,16 @@ jobs:
 
       - name: Synthesize Ephemeral doctest Suite (Context-Aware)
         run: |
-          # Combine the test stratum rules with the freshly synthesized C++ header
           cat test/sandbox/adjacency-list-tests-prompt.md > scratchpad/combined_test_prompt.md
-          printf "\n\n## Synthesized Target Header (`generated_graph.hpp`)\nWrite doctest cases strictly against the exact signatures defined below:\n```cpp\n" >> scratchpad/combined_test_prompt.md
+          cat << 'EOF' >> scratchpad/combined_test_prompt.md
+
+
+          ## Synthesized Target Header (`generated_graph.hpp`)
+          Write doctest cases strictly against the exact signatures defined below:
+          ```cpp
+          EOF
           cat scratchpad/generated_graph.hpp >> scratchpad/combined_test_prompt.md
-          printf "\n```\n" >> scratchpad/combined_test_prompt.md
+          echo '```' >> scratchpad/combined_test_prompt.md
 
           ./llama.cpp/build/bin/llama-cli \
             -m ".cache/models/$MODEL_FILE" \
