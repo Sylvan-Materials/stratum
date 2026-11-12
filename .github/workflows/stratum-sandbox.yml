@@ -77,7 +77,7 @@ jobs:
       - name: Fetch Ephemeral doctest.h Header
         run: |
           curl -sSL --fail -o scratchpad/doctest.h \
-            "https://githubusercontent.com"
+            "https://raw.githubusercontent.com/doctest/doctest/master/doctest/doctest.h"
 
       - name: Synthesize Ephemeral doctest Suite (Context-Aware)
         run: |
