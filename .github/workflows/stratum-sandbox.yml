@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@v4
 
       - nname: Install Clang for Cross-Compiler Check
-        ru: apt-get update && apt-get install -y --no-install-recommends clang
+        run: apt-get update && apt-get install -y --no-install-recommends clang
 
       - name: Cache Compiled llama-cli
         id: cache-llama-bin
