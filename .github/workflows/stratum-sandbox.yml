@@ -59,7 +59,7 @@ jobs:
 
       - name: Execute Stratum Prompt Layer
         run: |
-          mkdir -p scratchpad
+          mkdir -p scratchpad/doctest
           ./llama.cpp/build/bin/llama-cli \
             -m ".cache/models/${{ env.MODEL_FILE }}" \
             -f test/sandbox/adjacency-list-prompt.md \
