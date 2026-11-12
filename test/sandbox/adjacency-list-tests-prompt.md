@@ -12,3 +12,5 @@ Generate thorough `TEST_CASE` and `SUBCASE` blocks validating `stratum::Adjacenc
 3. **Disconnected Components & Self-Loops:** Verify isolated vertices return empty neighbor ranges and self-loops (`u -> u`) are preserved accurately.
 4. **CPO Vertex ID Extraction:** Verify `stratum::vertex_id` correctly extracts IDs from custom user-defined vertex structs, including `const` and rvalue references.
 5. **Boundary & Out-of-Range Safety:** Test edge insertion with non-contiguous or high-index vertex IDs to expose any unchecked vector indexing assumptions.
+6. **Structural Fallback CPO Test:** Define a plain user struct `PlainVertex { std::uint64_t id; };` with no `tag_invoke` overload and verify `stratum::vertex_id` extracts its ID via structural fallback.
+7. **ADL `tag_invoke` Override Test:** Define an opaque struct `CustomTagVertex` with a private/renamed field and a `friend` `tag_invoke` overload, verifying `stratum::vertex_id` prioritizes the custom ADL dispatch over member access.

@@ -14,20 +14,17 @@ You are the Stratum Automation Code Generator. Translate the following abstract 
 - Data Structure: A standard Adjacency List container representing a Directed Graph.
 - Internal Mechanics: Store vertices inside a sequential continuous vector. Map neighbor lists as sub-vectors storing target vertex descriptor markers.
 
-## 3. Customization Point Object (CPO) / niebloid Integration
-- Implement a vertex identifier accessor CPO named `vertex_id` inside the `stratum::cpo` namespace.
-- The CPO must gracefully bind to structures satisfying standard tuple-like properties via a template method lookup interface matching this user structure:
-  ```cpp
-  struct abstract_vertex_record {
-      unsigned int id;
-      int value;
-      template <std::size_t I>
-      decltype(auto) get() const {
-          if constexpr (I == 0) return id;
-          if constexpr (I == 1) return value;
-      }
-  };
-  ```
+## 2. Custom Point Object (CPO) & Concept Architecture (Mandatory)
+- **Zero Concrete Type Assumptions:** Never reference, forward-declare, or `static_assert` against concrete user types (such as `abstract_vertex_record`). The library header must remain completely agnostic to user-defined vertex and edge structs.
+- **Niebloid CPO Pattern:** Implement all customization points as `inline constexpr` Niebloid function objects inside `namespace stratum::cpo` (and lift them into `namespace stratum` via `using`).
+- **Two-Tier CPO Dispatch Priority:** Each CPO (e.g., `vertex_id`, `neighbors`) must evaluate customization in strict priority order using `if constexpr` and `requires` expressions:
+  1. **ADL / `tag_invoke` Customization:** Check if a valid `tag_invoke(cpo_tag, args...)` overload is found via Argument-Dependent Lookup.
+  2. **Structural Member Fallback:** If no `tag_invoke` overload exists, check for a valid member function or data member (e.g., `v.id()` or `v.id` for `vertex_id`; `g.neighbors(v)` for `neighbors`).
+  3. **Hard Concept Failure:** If neither customization path is satisfied, constrain `operator()` with a `requires` clause so invalid calls fail cleanly via SFINAE/concept diagnostics rather than failing inside the function body.
+- **Graph Theory Concepts:** Define explicit C++20/26 `concept` definitions in `namespace stratum::concepts` built directly on top of the CPOs:
+  - `vertex_identifiable<V>`: Requires `stratum::vertex_id(v)` to be well-formed and return an `std::integral` type.
+  - `adjacency_list<G, V>`: Requires `vertex_identifiable<V>` and requires `stratum::neighbors(g, v)` to return a `std::ranges::forward_range` whose elements satisfy `vertex_identifiable`.
+- **Safe Container Invariants:** Any reference `AdjacencyList` implementation included in the header must store vertices using associative or dynamically resized storage keyed by `stratum::vertex_id(v)` so non-contiguous or high-index vertex IDs never trigger out-of-bounds memory access.
 
 ## 4. Output Instruction
 Emit ONLY a single ```cpp code block containing the raw C++ header enclosed within header guard defines. Do not include conversational remarks or explanations before or after the block.

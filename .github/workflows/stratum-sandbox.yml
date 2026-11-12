@@ -7,8 +7,8 @@ on:
       - '.github/workflows/stratum-sandbox.yml'
 
 env:
-  MODEL_REPO: Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF
-  MODEL_FILE: qwen2.5-coder-1.5b-instruct-q4_k_m.gguf
+  MODEL_REPO: Qwen/Qwen2.5-Coder-3B-Instruct-GGUF
+  MODEL_FILE: qwen2.5-coder-3b-instruct-q4_k_m.gguf
   LLAMA_CPP_REF: master
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
             -DLLAMA_BUILD_EXAMPLES=OFF \
             -DLLAMA_BUILD_TOOLS=ON \
             -DLLAMA_BUILD_TESTS=OFF
-          cmake --build llama.cpp/build --target llama-cli -j$(nproc)
+          cmake --build llama.cpp/build --target llama-cli test-gbnf-validator -j$(nproc)
 
       - name: Cache GGUF Model
         id: cache-model
@@ -73,6 +73,10 @@ jobs:
           if [ ! -s scratchpad/generated_graph.hpp ]; then
             cp scratchpad/raw_output.txt scratchpad/generated_graph.hpp
           fi
+      - name: Verify Portable C++ Syntax (Clang)
+        continue-on-error: true
+        run: |
+          clang++ -fsyntax-only -x c++-header -std=c++2c -Wall -Wextra -pedantic scratchpad/generated_graph.hpp
 
       - name: Fetch Ephemeral doctest.h Header
         run: |
@@ -110,7 +114,11 @@ jobs:
       - name: Compile and Run Synthesized doctest Suite
         continue-on-error: true
         run: |
-          g++ -std=c++2c -Wall -Wextra -pedantic -Iscratchpad \
+          g++ -std=c++2c -O1 -g \
+            -fsanitize=address,undefined \
+            -fno-omit-frame-pointer \
+            -Wall -Wextra -pedantic \
+            -Iscratchpad \
             scratchpad/test_graph.cpp -o scratchpad/run_tests
           ./scratchpad/run_tests
 
