@@ -30,7 +30,7 @@ You are the Stratum Automation Code Generator. Translate the following abstract 
      - `if constexpr (requires { tag_invoke(*this, v); }) { return tag_invoke(*this, v); }`
      - `else if constexpr (requires { v.id(); }) { return v.id(); }`
      - `else { return v.id; }`
-     Immediately after closing `struct vertex_id_fn {};`, declare `inline constexpr vertex_id_fn vertex_id{};`.
+     Immediately after closing `struct vertex_id_fn {};`, declare `inline constexpr vertex_id_fn vertex_id{};`. Both vertex_id_fn::operator() and neighbors_fn::operator() MUST carry a trailing requires clause checking that at least one of their if constexpr dispatch branches is valid—never leave operator() unconstrained.
   2. **`vertex_identifiable` Concept:** Define `template <typename V> concept vertex_identifiable = requires(const V& v) { { stratum::vertex_id(v) } -> std::integral; };`.
   3. **`neighbors` CPO:** Define `struct neighbors_fn` (NO `inline` or `constexpr` on `struct`), with a templated `constexpr auto operator()(const G& g, const V& v) const -> decltype(auto)` constrained by a trailing `requires` clause checking that at least one dispatch path is valid. Inside `operator()`, dispatch using braced `if constexpr`:
      - `if constexpr (requires { tag_invoke(*this, g, v); }) { return tag_invoke(*this, g, v); }`
