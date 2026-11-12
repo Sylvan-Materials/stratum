@@ -15,8 +15,7 @@ You are the Stratum Automation Code Generator. Translate the following abstract 
   3. `neighbors` Niebloid CPO
   4. `adjacency_list` concept
   5. `AdjacencyList` reference container
-
-
+- CONSTRAINED RETURN TYPES: When constraining a function's trailing return type with a concept, ALWAYS append `auto` or `decltype(auto)` after the concept name (e.g., `-> std::integral auto` and `-> std::ranges::forward_range auto`). Never write a bare concept name as a return type.
 
 ## 2. Target Component Archetype
 - Namespace: Enclose all code elements inside the `stratum` root namespace.
