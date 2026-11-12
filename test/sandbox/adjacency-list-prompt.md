@@ -26,10 +26,10 @@ You are the Stratum Automation Code Generator. Translate the following abstract 
 - Data Structure: A standard Adjacency List container representing a Directed Graph.
 - Internal Mechanics: Store vertices inside a sequential continuous vector. Map neighbor lists as sub-vectors storing target vertex descriptor markers.
 
-## 2. Custom Point Object (CPO) & Concept Architecture (Mandatory)
+## 3. Custom Point Object (CPO) & Concept Architecture (Mandatory)
 - **Zero Concrete Type Assumptions:** Never reference or `static_assert` against concrete user types.
 - **Single Flat Namespace & Strict Declaration Order:** Define everything directly inside `namespace stratum` in this exact top-to-bottom order:
-  1. **`vertex_id` CPO:** Define `struct vertex_id_fn` (NO `inline` or `constexpr` on `struct`), with a templated `constexpr auto operator()(const V& v) const` constrained by a trailing `requires` clause. Inside `operator()`, dispatch via `if constexpr (requires { tag_invoke(*this, v); }) return tag_invoke(*this, v);` else `return v.id;` (or `v.id()`). Immediately after closing `struct vertex_id_fn {};`, declare `inline constexpr vertex_id_fn vertex_id{};`.
+  1. **`vertex_id` CPO:** Define `struct vertex_id_fn` (NO `inline` or `constexpr` on `struct`), with a templated `constexpr auto operator()(const V& v) const` constrained by a trailing `requires` clause. Inside `operator()`, dispatch via `if constexpr (requires { tag_invoke(*this, v); }) { return tag_invoke(*this, v); } else { return v.id; }` (or `v.id()`). Immediately after closing `struct vertex_id_fn {};`, declare `inline constexpr vertex_id_fn vertex_id{};`.
   2. **`vertex_identifiable` Concept:** Define `template <typename V> concept vertex_identifiable = requires(const V& v) { { stratum::vertex_id(v) } -> std::integral; };`.
   3. **`neighbors` CPO:** Define `struct neighbors_fn` (NO `inline` or `constexpr` on `struct`), dispatching via `if constexpr (requires { tag_invoke(*this, g, v); }) return tag_invoke(*this, g, v);` else `return g.neighbors(v);`. Immediately after closing `struct neighbors_fn {};`, declare `inline constexpr neighbors_fn neighbors{};`.
   4. **`adjacency_list` Concept:** Define `template <typename G, typename V> concept adjacency_list = vertex_identifiable<V> && requires(const G& g, const V& v) { { stratum::neighbors(g, v) } -> std::ranges::forward_range; requires vertex_identifiable<std::ranges::range_value_t<decltype(stratum::neighbors(g, v))>>; };`.
