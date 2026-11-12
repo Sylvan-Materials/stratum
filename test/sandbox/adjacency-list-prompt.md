@@ -30,12 +30,13 @@ You are the Stratum Automation Code Generator. Translate the following abstract 
      - `if constexpr (requires { tag_invoke(*this, v); }) { return tag_invoke(*this, v); }`
      - `else if constexpr (requires { v.id(); }) { return v.id(); }`
      - `else { return v.id; }`
-     Immediately after closing `struct vertex_id_fn {};`, declare `inline constexpr vertex_id_fn vertex_id{};`. Both vertex_id_fn::operator() and neighbors_fn::operator() MUST carry a trailing requires clause checking that at least one of their if constexpr dispatch branches is valid—never leave operator() unconstrained.
+   Immediately after closing `struct vertex_id_fn {};`, declare `inline constexpr vertex_id_fn vertex_id{};`. When a const member function returns a const reference to a neighbor container and the queried vertex is absent, never return a temporary or braced initializer list. Instead, return a reference to a function-local static const empty container instance so its storage duration outlives the call.
   2. **`vertex_identifiable` Concept:** Define `template <typename V> concept vertex_identifiable = requires(const V& v) { { stratum::vertex_id(v) } -> std::integral; };`.
   3. **`neighbors` CPO:** Define `struct neighbors_fn` (NO `inline` or `constexpr` on `struct`), with a templated `constexpr auto operator()(const G& g, const V& v) const -> decltype(auto)` constrained by a trailing `requires` clause checking that at least one dispatch path is valid. Inside `operator()`, dispatch using braced `if constexpr`:
      - `if constexpr (requires { tag_invoke(*this, g, v); }) { return tag_invoke(*this, g, v); }`
      - `else { return g.neighbors(v); }`
      Immediately after closing `struct neighbors_fn {};`, declare `inline constexpr neighbors_fn neighbors{};`.
+   Constrain the templated call operator of every Custom Point Object with a trailing requires clause verifying that at least one customization or member fallback path is valid for the given arguments. Never leave a CPO call operator unconstrained, so unsupported types fail cleanly during concept evaluation rather than triggering hard errors inside the function body.
   4. **`adjacency_list` Concept:** Define `template <typename G, typename V> concept adjacency_list = vertex_identifiable<V> && requires(const G& g, const V& v) { { stratum::neighbors(g, v) } -> std::ranges::forward_range; requires vertex_identifiable<std::ranges::range_value_t<decltype(stratum::neighbors(g, v))>>; };`.
   5. **`AdjacencyList` Reference Container:** Implement `template <vertex_identifiable V> class AdjacencyList` using `std::unordered_map` keyed by vertex ID (`decltype(stratum::vertex_id(std::declval<V>()))`) mapping to `std::vector<V>`, providing `add_edge(const V& source, const V& target) -> void` and a `const`-qualified `neighbors(const V& v) const -> const std::vector<V>&` method that safely returns a static empty `std::vector<V>` if `v` has no outgoing edges.
 
