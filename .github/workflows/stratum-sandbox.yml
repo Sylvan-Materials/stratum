@@ -32,7 +32,7 @@ jobs:
       - name: Build llama-cli (Cache Miss Only)
         if: steps.cache-llama-bin.outputs.cache-hit != 'true'
         run: |
-          git clone --depth 1 --branch ${{ env.LLAMA_CPP_REF }} https://github.com
+          git clone --depth 1 --branch ${{ env.LLAMA_CPP_REF }} https://github.com/ggml-org/llama.cpp/llama.cpp.git
           cmake -S llama.cpp -B llama.cpp/build \
             -DLLAMA_BUILD_EXAMPLES=OFF \
             -DLLAMA_BUILD_TOOLS=ON \
@@ -65,6 +65,10 @@ jobs:
             -c 4096 \
             > scratchpad/generated_graph.hpp
 
+      - name: Verify C++ Syntax (Non-Blocking)
+        continue-on-error: true
+        run: |
+          g++ -fsyntax-only -std=c++2c -Wall -Wextra -pedantic scratchpad/generated_graph.hpp
       - name: Upload Ephemeral Output for Human Validation
         uses: actions/upload-artifact@v4
         with:
