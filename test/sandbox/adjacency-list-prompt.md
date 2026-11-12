@@ -16,6 +16,10 @@ You are the Stratum Automation Code Generator. Translate the following abstract 
   4. `adjacency_list` concept
   5. `AdjacencyList` reference container
 - CONSTRAINED RETURN TYPES: When constraining a function's trailing return type with a concept, ALWAYS append `auto` or `decltype(auto)` after the concept name (e.g., `-> std::integral auto` and `-> std::ranges::forward_range auto`). Never write a bare concept name as a return type.
+- **Nested Concept Checks:** Inside a `requires { ... }` block, always prefix sub-concept checks with the `requires` keyword (e.g., `requires vertex_identifiable<V>;`).
+- **Range Element Constraints:** Never use runtime algorithms like `std::ranges::for_each` inside a `concept`. Constrain range element types at compile time using `std::ranges::range_value_t` (e.g., `requires vertex_identifiable<std::ranges::range_value_t<decltype(stratum::neighbors(g, v))>>;`).
+- **Separate Niebloid Struct & Instance Declarations:** Never write `inline constexpr struct foo { ... };`. Always declare a named functor struct first (e.g., `struct vertex_id_fn { ... };`), followed immediately by its `inline constexpr` variable instance (`inline constexpr vertex_id_fn vertex_id{};`).
+- **Compound Requirement Return Constraints:** Never use `static_cast<ConceptName>(expr)` inside a `requires` block. Always use C++20/26 compound requirement syntax `{ expr } -> ConceptName;` (e.g., `{ stratum::vertex_id(v) } -> std::integral;` and `{ stratum::neighbors(g, v) } -> std::ranges::forward_range;`).
 
 ## 2. Target Component Archetype
 - Namespace: Enclose all code elements inside the `stratum` root namespace.
