@@ -22,12 +22,15 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - nname: Install Clang for Cross-Compiler Check
+        ru: apt-get update && apt-get install -y --no-install-recommends clang
+
       - name: Cache Compiled llama-cli
         id: cache-llama-bin
         uses: actions/cache@v4
         with:
           path: llama.cpp/build/bin
-          key: llama-cli-${{ runner.os }}-${{ env.LLAMA_CPP_REF }}
+          key: llama-cli-${{ runner.os }}-${{ env.LLAMA_CPP_REF }}-v2
 
       - name: Build llama-cli (Cache Miss Only)
         if: steps.cache-llama-bin.outputs.cache-hit != 'true'
@@ -40,7 +43,7 @@ jobs:
           cmake -S llama.cpp -B llama.cpp/build \
             -DLLAMA_BUILD_EXAMPLES=OFF \
             -DLLAMA_BUILD_TOOLS=ON \
-            -DLLAMA_BUILD_TESTS=OFF
+            -DLLAMA_BUILD_TESTS=ON
           cmake --build llama.cpp/build --target llama-cli test-gbnf-validator -j$(nproc)
 
       - name: Cache GGUF Model
