@@ -32,8 +32,8 @@ jobs:
       - name: Build llama-cli (Cache Miss Only)
         if: steps.cache-llama-bin.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends cmake build-essential libcurl4-openssl-dev
+          apt-get update
+          apt-get install -y --no-install-recommends cmake build-essential libcurl4-openssl-dev
           git clone --depth 1 --branch ${{ env.LLAMA_CPP_REF }} https://github.com/ggml-org/llama.cpp.git
           cmake -S llama.cpp -B llama.cpp/build \
             -DLLAMA_BUILD_EXAMPLES=OFF \
