@@ -77,7 +77,7 @@ jobs:
             --log-disable \
             --no-display-prompt \
             -t $(nproc) \
-            -c 4096 \
+            -c 8192 \
             > scratchpad/raw_output.txt
 
           # Extract everything between ```cpp and ``` (or fallback to raw output if no fences)
