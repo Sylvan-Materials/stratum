@@ -7,8 +7,8 @@ on:
       - '.github/workflows/stratum-sandbox.yml'
 
 env:
-  MODEL_REPO: Qwen/Qwen2.5-Coder-3B-Instruct-GGUF
-  MODEL_FILE: qwen2.5-coder-3b-instruct-q4_k_m.gguf
+  MODEL_REPO: Qwen/Qwen2.5-Coder-7B-Instruct-GGUF
+  MODEL_FILE: qwen2.5-coder-7b-instruct-q4_k_m.gguf
   LLAMA_CPP_REF: master
 
 jobs:
