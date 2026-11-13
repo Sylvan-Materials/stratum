@@ -26,6 +26,14 @@ You are the Stratum Automation Code Generator. Translate this specification into
   3. **`neighbors` CPO:** `neighbors_fn` functor (overloads for `tag_invoke(*this, g, v)` and `g.neighbors(v)`) followed immediately by `inline constexpr neighbors_fn neighbors{};`.
   4. **`adjacency_list` Concept:** Constrains `G` and `V` so `V` satisfies `vertex_identifiable`, `stratum::neighbors(g, v)` yields a `std::ranges::forward_range`, and a nested `requires` check confirms `std::ranges::range_value_t<decltype(stratum::neighbors(g, v))>` satisfies `vertex_identifiable`.
   5. **`AdjacencyList` Container:** Class template `AdjacencyList` constrained on `vertex_identifiable V`, mapping vertex IDs to `std::vector<V>`, with `add_edge(const V& source, const V& target) -> void` and a `const`-qualified `neighbors(const V& v) const -> const std::vector<V>&`. When `v` is absent from the map, return a reference to a function-local `static const` empty `std::vector<V>` so its storage duration outlives the call (never `return {};`).
+- **• Non-Template Niebloid Structs:** Declare vertex_id_fn and neighbors_fn as non-template struct types (never put template <...> on the struct itself). Only their operator() overloads are function templates.
+- **Enforce Exact Line-by-Line Sequence:** Emit declarations in this exact top-to-bottom order so no symbol is referenced before it exists:
+	1. void tag_invoke();
+	2. struct vertex_id_fn { ... }; followed immediately by inline constexpr vertex_id_fn vertex_id{};
+	3. concept vertex_identifiable
+	4. struct neighbors_fn { ... }; followed immediately by inline constexpr neighbors_fn neighbors{};
+	5. concept adjacency_list
+	6. template <vertex_identifiable V> class AdjacencyList
 
 ## 4. Output Instruction
 Emit ONLY a single ```cpp code block containing the raw C++ header enclosed within header guard defines (`#ifndef` / `#define` / `#endif`). Do not include conversational remarks or explanations before or after the block.
