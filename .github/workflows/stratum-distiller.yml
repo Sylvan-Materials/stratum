@@ -52,10 +52,13 @@ jobs:
         shell: bash
         run: |
           if [ -n "${{ inputs.custom_chapter }}" ]; then
-            echo "CHAPTER=${{ inputs.custom_chapter }}" >> "$GITHUB_OUTPUT"
+            CHAPTER="${{ inputs.custom_chapter }}"
+          elif [ -n "${{ inputs.draft_chapter }}" ]; then
+            CHAPTER="${{ inputs.draft_chapter }}"
           else
-            echo "CHAPTER=${{ inputs.draft_chapter }}" >> "$GITHUB_OUTPUT"
+            CHAPTER="concepts.tex"
           fi
+          echo "CHAPTER=$CHAPTER" >> "$GITHUB_OUTPUT"
           echo "ERA=${{ inputs.target_era || 'C++26' }}" >> "$GITHUB_OUTPUT"
 
       - name: Cache GGUF Model
@@ -70,7 +73,7 @@ jobs:
         run: |
           mkdir -p .cache/models
           curl -sSL --fail -o ".cache/models/$MODEL_FILE" \
-            "https://huggingface.co"
+           "https://huggingface.co/${{ env.MODEL_REPO }}/resolve/main/${{ env.MODEL_FILE }}"
 
       - name: Cache Compiled llama-cli
         id: cache-llama-bin
