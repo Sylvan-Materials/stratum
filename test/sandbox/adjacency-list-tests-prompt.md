@@ -28,7 +28,7 @@ struct CustomTagVertex {
     friend constexpr auto tag_invoke(stratum::vertex_id_fn, const CustomTagVertex& v) noexcept -> std::uint64_t {
         return v.secret_id;
     }
-    friend std::ostream& operator<<(std::ostream& os, const CustomTagVertex& v) { return os << v.id; }
+    friend std::ostream& operator<<(std::ostream& os, const CustomTagVertex& v) { return os << v.secret_id; }
 
 };
 
