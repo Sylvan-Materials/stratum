@@ -15,18 +15,20 @@ You are the Stratum Automation Code Generator. Translate this specification into
 
 ## 3. Custom Point Object (CPO) & Concept Architecture (Mandatory)
 - **Zero Concrete Type Assumptions:** Never reference or `static_assert` against concrete user types.
-- **ADL Poison-Pill:** The very first declaration inside `namespace stratum` MUST be a zero-parameter `void tag_invoke();` function so unqualified `tag_invoke` calls inside `requires` clauses pass initial name lookup and dispatch via ADL. Never pass `vertex_id_fn` or `neighbors_fn` as parameters to this poison pill.
-- **Constrained Overload Sets (No Circular Concepts, No Self-Calls):**
-  - Inside `vertex_id_fn` and `neighbors_fn`, implement each customization tier as a separate templated `operator()` overload constrained by its own `requires` clause on the function signature (never an unconstrained `operator()`).
-  - Never reference `vertex_identifiable` or `adjacency_list` inside `vertex_id_fn` or `neighbors_fn`—those concepts are declared *below* the functors. Constrain overloads strictly on raw expressions (`tag_invoke`, `.id()`, `.id`, or `.neighbors(v)`), negating `tag_invoke` on fallback overloads to prevent ambiguity.
-  - Inside a function signature's trailing `requires` clause, never use `*this` (which is only valid inside the function body); pass a value-initialized tag instance (`vertex_id_fn{}` or `neighbors_fn{}`) as the first argument to `tag_invoke`. Inside the body, invoke `tag_invoke(*this, ...)` or the member access/method directly (never recursively call `stratum::vertex_id` or `stratum::neighbors`).
-- **Mandatory Template Parameter Headers on Concepts:** Every `concept` declaration MUST begin with an explicit `template <...>` parameter list—never omit the `template` head or use `auto` inside a `requires(...)` parameter list.
-- **Strict Top-to-Bottom Declaration Order inside `namespace stratum`:**
-  1. **`vertex_id` CPO:** `vertex_id_fn` functor (overloads for `tag_invoke`, `v.id()`, and `v.id`) followed immediately by `inline constexpr vertex_id_fn vertex_id{};`.
-  2. **`vertex_identifiable` Concept:** Explicitly declared as a `template <typename V>` concept requiring that invoking `stratum::vertex_id` on a `const V&` yields an `std::integral` type.
-  3. **`neighbors` CPO:** `neighbors_fn` functor (overloads for `tag_invoke` and `g.neighbors(v)`) followed immediately by `inline constexpr neighbors_fn neighbors{};`.
-  4. **`adjacency_list` Concept:** Explicitly declared as a `template <typename G, typename V>` concept requiring that `V` satisfies `vertex_identifiable`, `stratum::neighbors(g, v)` yields a `std::ranges::forward_range` when binding `const G& g` and `const V& v` directly, and a nested `requires vertex_identifiable<...>;` statement without curly braces confirms `std::ranges::range_value_t<decltype(stratum::neighbors(g, v))>` satisfies `vertex_identifiable`.
-  5. **`AdjacencyList` Container:** Declare `AdjacencyList` as a single class template parameterized on `vertex_identifiable V` at the class level (never use templated member aliases inside a non-template class). Map vertex IDs to `std::vector<V>`, providing `add_edge(const V& source, const V& target) -> void` and a `const`-qualified `neighbors(const V& v) const -> const std::vector<V>&`. When `v` is absent from the map, return a reference to a function-local `static const` empty `std::vector<V>` so its storage duration outlives the call (never `return {};`).
+- **ADL Poison-Pill:** The very first declaration inside `namespace stratum` MUST be `void tag_invoke();`. Never pass any parameters to this declaration.
+- **Strict top-to-bottom declaration order (No Forward References):**
+  1. **`vertex_id_fn` Struct:** Define `struct vertex_id_fn` as a plain non-template struct. Inside it, define three distinct, standalone `constexpr auto operator()` overloads:
+     - Overload A: Takes `const V& v` and is constrained strictly by `requires requires { tag_invoke(vertex_id_fn{}, v); }`. It returns `tag_invoke(vertex_id_fn{}, v);`.
+     - Overload B: Takes `const V& v` and is constrained strictly by `requires requires { v.id(); }`. It returns `v.id();`.
+     - Overload C: Takes `const V& v` and is constrained strictly by `requires requires { v.id; }`. It returns `v.id;`.
+  2. **`vertex_id` Niebloid Object:** Immediately after closing the struct, declare `inline constexpr vertex_id_fn vertex_id{};`.
+  3. **`vertex_identifiable` Concept:** Define `template <typename V> concept vertex_identifiable = requires(const V& v) { { stratum::vertex_id(v) } -> std::integral; };`.
+  4. **`neighbors_fn` Struct:** Define `struct neighbors_fn` as a plain non-template struct. Inside it, define two distinct, standalone `constexpr auto operator()` overloads:
+     - Overload A: Takes `const G& g, const V& v` and is constrained strictly by `requires requires { tag_invoke(neighbors_fn{}, g, v); }`. It returns `tag_invoke(neighbors_fn{}, g, v);`.
+     - Overload B: Takes `const G& g, const V& v` and is constrained strictly by `requires requires { g.neighbors(v); }`. It returns `g.neighbors(v);`.
+  5. **`neighbors` Niebloid Object:** Immediately after closing the struct, declare `inline constexpr neighbors_fn neighbors{};`.
+  6. **`adjacency_list` Concept:** Define `template <typename G, typename V> concept adjacency_list = stratum::vertex_identifiable<V> && requires(const G& g, const V& v) { { stratum::neighbors(g, v) } -> std::ranges::forward_range; } && stratum::vertex_identifiable<std::ranges::range_value_t<decltype(stratum::neighbors(std::declval<const G&>(), std::declval<const V&>()))>>;`.
+  7. **`AdjacencyList` Container:** Declare `template <typename V> class AdjacencyList` as a class template parameterized on a plain `typename V` at the class level. Use a nested trailing `requires stratum::vertex_identifiable<V>` clause to constrain it. Store elements in a `std::unordered_map` keyed by `std::uint64_t`. Provide `add_edge(const V& source, const V& target) -> void`. Provide a `const`-qualified `neighbors(const V& v) const -> const std::vector<V>&` method. Inside this method, if `v` is absent, declare a local function-static `static const std::vector<V> empty_vec{};` and return it (never return `{}`).
 
 ## 4. Output Instruction
 Emit ONLY a single ```cpp code block containing the raw C++ header enclosed within header guard defines (`#ifndef` / `#define` / `#endif`). Do not include conversational remarks or explanations before or after the block.
