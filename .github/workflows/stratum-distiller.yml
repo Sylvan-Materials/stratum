@@ -109,7 +109,7 @@ jobs:
           CHAPTER="${{ steps.resolve.outputs.CHAPTER }}"
           echo "Fetching $CHAPTER from cplusplus/draft..."
           curl -sSL --fail -o "scratchpad/$CHAPTER" \
-            "https://githubusercontent.com/cplusplus/draft/main/source/$CHAPTER"
+            "https://raw.githubusercontent.com/cplusplus/draft/main/source/$CHAPTER"
 
           # Strip LaTeX comments, index entries, and layout noise to save context tokens
           sed -e 's/%.*$//' \
