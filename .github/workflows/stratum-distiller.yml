@@ -12,8 +12,9 @@ on:
           - concepts.tex
           - templates.tex
           - ranges.tex
-          - reflect.tex
           - meta.tex
+          - expressions.tex
+          - declarations.tex          
       custom_chapter:
         description: 'Optional custom .tex filename (overrides dropdown if set)'
         required: false
@@ -128,7 +129,7 @@ jobs:
           BASENAME="${CHAPTER%.tex}"
 
           cat pipeline/stages/cpp-spec-distiller.md > scratchpad/combined_distill_prompt.md
-          printf "\n\n## Target Standard Era: %s\n## Raw ISO Specification Source (%s)\n```latex\n" "ERA" "CHAPTER" >> scratchpad/combined_distill_prompt.md
+          printf "\n\n## Target Standard Era: %s\n## Raw ISO Specification Source (%s)\n```latex\n" "$ERA" "$CHAPTER" >> scratchpad/combined_distill_prompt.md
           head -n 900 scratchpad/cleaned_spec.txt >> scratchpad/combined_distill_prompt.md
           printf "\n```\n" >> scratchpad/combined_distill_prompt.md
 
