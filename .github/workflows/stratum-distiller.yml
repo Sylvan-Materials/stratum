@@ -1,0 +1,150 @@
+name: Stratum C++ Spec Distiller
+
+on:
+  workflow_dispatch:
+    inputs:
+      draft_chapter:
+        description: 'Official ISO C++ Draft Chapter (from cplusplus/draft/main/source/)'
+        required: true
+        default: 'concepts.tex'
+        type: choice
+        options:
+          - concepts.tex
+          - templates.tex
+          - ranges.tex
+          - reflect.tex
+          - meta.tex
+      custom_chapter:
+        description: 'Optional custom .tex filename (overrides dropdown if set)'
+        required: false
+        default: ''
+        type: string
+      target_era:
+        description: 'Target C++ Standard Era'
+        required: true
+        default: 'C++26'
+        type: choice
+        options:
+          - C++26
+          - C++29
+  push:
+    branches: [ main ]
+    paths:
+      - 'pipeline/stages/cpp-spec-distiller.md'
+      - '.github/workflows/stratum-distiller.yml'
+
+env:
+  MODEL_REPO: Qwen/Qwen2.5-Coder-7B-Instruct-GGUF
+  MODEL_FILE: qwen2.5-coder-7b-instruct-q4_k_m.gguf
+  LLAMA_CPP_REF: master
+  CTX_DISTILLER: 16384
+
+jobs:
+  distill-cpp-spec:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Stratum Repository
+        uses: actions/checkout@v4
+
+      - name: Resolve Target Chapter Name
+        id: resolve
+        shell: bash
+        run: |
+          if [ -n "${{ inputs.custom_chapter }}" ]; then
+            echo "CHAPTER=${{ inputs.custom_chapter }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "CHAPTER=${{ inputs.draft_chapter }}" >> "$GITHUB_OUTPUT"
+          fi
+          echo "ERA=${{ inputs.target_era || 'C++26' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache GGUF Model
+        id: cache-model
+        uses: actions/cache@v4
+        with:
+          path: .cache/models
+          key: gguf-${{ env.MODEL_FILE }}
+
+      - name: Download GGUF Model (Cache Miss Only)
+        if: steps.cache-model.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .cache/models
+          curl -sSL --fail -o ".cache/models/$MODEL_FILE" \
+            "https://huggingface.co"
+
+      - name: Cache Compiled llama-cli
+        id: cache-llama-bin
+        uses: actions/cache@v4
+        with:
+          path: llama.cpp/build/bin
+          key: llama-cli-${{ runner.os }}-${{ env.LLAMA_CPP_REF }}-portable-v1
+
+      - name: Build llama-cli (Cache Miss Only)
+        if: steps.cache-llama-bin.outputs.cache-hit != 'true'
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends cmake build-essential libcurl4-openssl-dev
+          git clone --depth 1 --branch ${{ env.LLAMA_CPP_REF }} https://github.com
+          cmake -S llama.cpp -B llama.cpp/build \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DGGML_NATIVE=OFF \
+            -DGGML_AVX2=ON \
+            -DGGML_FMA=ON \
+            -DGGML_F16C=ON \
+            -DLLAMA_BUILD_EXAMPLES=OFF \
+            -DLLAMA_BUILD_TOOLS=ON \
+            -DLLAMA_BUILD_TESTS=ON
+          cmake --build llama.cpp/build --target llama-cli test-gbnf-validator -j$(nproc)
+
+      - name: Fetch & Strip ISO C++ Draft Chapter
+        shell: bash
+        run: |
+          mkdir -p scratchpad
+          CHAPTER="${{ steps.resolve.outputs.CHAPTER }}"
+          echo "Fetching $CHAPTER from cplusplus/draft..."
+          curl -sSL --fail -o "scratchpad/$CHAPTER" \
+            "https://githubusercontent.com"
+
+          # Strip LaTeX comments, index entries, and layout noise to save context tokens
+          sed -e 's/%.*$//' \
+              -e 's/\\indexlibrary[^}]*}//g' \
+              -e 's/\\indextext[^}]*}//g' \
+              -e '/^[[:space:]]*$/d' \
+              "scratchpad/$CHAPTER" > scratchpad/cleaned_spec.txt
+
+          echo "Cleaned spec line count: $(wc -l < scratchpad/cleaned_spec.txt)"
+
+      - name: Assemble Distiller Prompt & Synthesize Constraints
+        shell: bash
+        run: |
+          CHAPTER="${{ steps.resolve.outputs.CHAPTER }}"
+          ERA="${{ steps.resolve.outputs.ERA }}"
+          BASENAME="${CHAPTER%.tex}"
+
+          cat pipeline/stages/cpp-spec-distiller.md > scratchpad/combined_distill_prompt.md
+          printf "\n\n## Target Standard Era: %s\n## Raw ISO Specification Source (%s)\n```latex\n" "ERA" "CHAPTER" >> scratchpad/combined_distill_prompt.md
+          # Cap input slice at 900 lines (~10k tokens) so 16k context window leaves ample room for output
+          head -n 900 scratchpad/cleaned_spec.txt >> scratchpad/combined_distill_prompt.md
+          printf "\n```\n" >> scratchpad/combined_distill_prompt.md
+
+          ./llama.cpp/build/bin/llama-cli \
+            -m ".cache/models/$MODEL_FILE" \
+            -f scratchpad/combined_distill_prompt.md \
+            -st \
+            --temp 0.0 \
+            --seed 42 \
+            --log-disable \
+            --no-display-prompt \
+            -t $(nproc) \
+            -c $CTX_DISTILLER \
+            > "scratchpad/distilled-${BASENAME}.md"
+
+      - name: Upload Distilled Spec Stratum for Human Review
+        uses: actions/upload-artifact@v4
+        with:
+          name: distilled-cpp-spec-stratum
+          path: |
+            scratchpad/distilled-*.md
+            scratchpad/cleaned_spec.txt
+          retention-days: 7
