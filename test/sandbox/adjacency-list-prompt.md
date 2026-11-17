@@ -17,12 +17,14 @@ You are the Stratum Automation Code Generator. Translate this specification into
 - **Zero Concrete Type Assumptions:** Never reference or `static_assert` against concrete user types.
 - **ADL Poison-Pill:** The very first declaration inside `namespace stratum` MUST be `void tag_invoke();`. Never pass any parameters to this declaration.
 - **Strict top-to-bottom declaration order (No Forward References):**
-  1. **`vertex_id_fn` Struct:** Define `struct vertex_id_fn` as a plain non-template struct. Inside it, define three distinct, standalone `constexpr auto operator()` overloads:
-     - Overload A: Takes `const V& v` and is constrained strictly by `requires { tag_invoke(std::declval<vertex_id_fn>{}, v); }`. It returns `tag_invoke(std::declval<vertex_id_fn>{}, v);`.
-     - Overload B: Takes `const V& v` and is constrained strictly by `requires { v.id(); }`. It returns `v.id();`.
-     - Overload C: Takes `const V& v` and is constrained strictly by `requires { v.id; }`. It returns `v.id;`.
+  1. **`vertex_id` CPO:** Define `struct vertex_id_fn` as a plain non-template struct. Inside it, implement three separate, non-conflicting, templated `constexpr auto operator()` overloads:
+     - Overload A: Takes `const V& v` and carries a trailing `requires` clause checking `requires { tag_invoke(std::declval<vertex_id_fn>(), v); }`. In its evaluated function body, it must return a direct call passing a value-initialized tag or `*this` (e.g., returning `tag_invoke(vertex_id_fn{}, v);` or `tag_invoke(*this, v);`), never invoking `std::declval` in an evaluated context.
+     - Overload B: Takes `const V& v` and carries a trailing `requires` clause checking `requires { v.id(); }`. It returns `v.id();`.
+     - Overload C: Takes `const V& v` and carries a trailing `requires` clause checking `requires { v.id; }`. It returns `v.id;`.
   2. **`vertex_id` Niebloid Object:** Immediately after closing the struct, declare `inline constexpr vertex_id_fn vertex_id{};`.
-  3. **`vertex_identifiable` Concept:** Define `template <typename V> concept vertex_identifiable = requires(const V& v) { { stratum::vertex_id(v) } -> std::integral; };`.
+  3. **`neighbors` CPO:** Define `struct neighbors_fn` as a plain non-template struct. Inside it, implement two separate, non-conflicting, templated `constexpr auto operator()` overloads:
+     - Overload A: Takes `const G& g, const V& v` and carries a trailing `requires` clause checking `requires { tag_invoke(std::declval<neighbors_fn>(), g, v); }`. In its evaluated function body, it must return a direct call passing a value-initialized tag or `*this` (e.g., returning `tag_invoke(neighbors_fn{}, g, v);` or `tag_invoke(*this, g, v);`), never invoking `std::declval` in an evaluated context.
+     - Overload B: Takes `const G& g, const V& v` and carries a trailing `requires` clause checking `requires { g.neighbors(v); }`. It returns `g.neighbors(v);`.
   4. **`neighbors_fn` Struct:** Define `struct neighbors_fn` as a plain non-template struct. Inside it, define two distinct, standalone `constexpr auto operator()` overloads:
      - Overload A: Takes `const G& g, const V& v` and is constrained strictly by `requires { tag_invoke(std::declval<neighbors_fn>{}, g, v); }`. It returns `tag_invoke(std::declval<neighbors_fn>{}, g, v);`.
      - Overload B: Takes `const G& g, const V& v` and is constrained strictly by `requires { g.neighbors(v); }`. It returns `g.neighbors(v);`.
