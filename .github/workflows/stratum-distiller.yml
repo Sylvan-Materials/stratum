@@ -3,6 +3,14 @@ name: Stratum C++ Spec Distiller
 on:
   workflow_dispatch:
     inputs:
+      spec_source:
+        description: 'Specification Repository'
+        required: true
+        default: 'cplusplus/draft'
+        type: choice
+        options:
+          - cplusplus/draft
+          - stdgraph/P1709
       draft_chapter:
         description: 'Official ISO C++ Draft Chapter (from cplusplus/draft/main/source/)'
         required: true
@@ -28,11 +36,11 @@ on:
         options:
           - C++26
           - C++29
-  push:
-    branches: [ main ]
-    paths:
-      - 'pipeline/stages/cpp-spec-distiller.md'
-      - '.github/workflows/stratum-distiller.yml'
+#  push:
+#    branches: [ main ]
+#    paths:
+#      - 'pipeline/stages/cpp-spec-distiller.md'
+#      - '.github/workflows/stratum-distiller.yml'
 
 env:
   MODEL_REPO: Qwen/Qwen2.5-Coder-7B-Instruct-GGUF
@@ -107,10 +115,16 @@ jobs:
         shell: bash
         run: |
           mkdir -p scratchpad
+          SOURCE="${{ inputs.spec_source || 'cplusplus/draft' }}"
           CHAPTER="${{ steps.resolve.outputs.CHAPTER }}"
-          echo "Fetching $CHAPTER from cplusplus/draft..."
+          if [ "$SOURCE" = "stdgraph/P1709" ]; then
+            SUBDIR="tex"
+          else
+            SUBDIR="source"
+          fi
+          echo "Fetching $CHAPTER from $SOURCE/$SUBDIR..."
           curl -sSL --fail -o "scratchpad/$CHAPTER" \
-            "https://raw.githubusercontent.com/cplusplus/draft/main/source/$CHAPTER"
+            "https://raw.githubusercontent.com/$SOURCE/main/$SUBDIR/$CHAPTER"
 
           # Strip LaTeX comments, index entries, and layout noise to save context tokens
           sed -e 's/%.*$//' \
