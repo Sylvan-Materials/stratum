@@ -12,10 +12,13 @@ Begin `test_graph.cpp` with these exact preprocessor directives, includes, globa
 #include <cstdint>
 #include <ranges>
 #include <vector>
+#include <ostream>
 
 struct MockVertex {
     std::uint64_t id;
     bool operator==(const MockVertex&) const = default;
+    friend std::ostream& operator<<(std::ostream& os, const MockVertex& v) { return os << v.id; }
+
 };
 
 struct CustomTagVertex {
@@ -25,6 +28,8 @@ struct CustomTagVertex {
     friend constexpr auto tag_invoke(stratum::vertex_id_fn, const CustomTagVertex& v) noexcept -> std::uint64_t {
         return v.secret_id;
     }
+    friend std::ostream& operator<<(std::ostream& os, const MockVertex& v) { return os << v.id; }
+
 };
 
 static_assert(stratum::vertex_identifiable<MockVertex>);

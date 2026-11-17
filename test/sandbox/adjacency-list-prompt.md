@@ -12,6 +12,7 @@ You are the Stratum Automation Code Generator. Translate this specification into
 ## 2. Target Component Archetype
 - **Directed Graph Adjacency List:** A header-only `AdjacencyList` container driven by Custom Point Objects (CPOs) and C++26 concepts.
 - **Associative Storage:** Store adjacency lists in a `std::unordered_map` keyed by vertex ID mapping to `std::vector<V>` so sparse or high-index vertex IDs never trigger out-of-bounds memory access.
+- **Strictly Directed Edges:** add_edge(source, target) must insert target ONLY into source's adjacency list—never insert a symmetric reverse edge from target to source (the graph is strictly directed, so a self-loop u -> u adds u to its own neighbor list exactly once).
 
 ## 3. Custom Point Object (CPO) & Concept Architecture (Mandatory)
 - **Zero Concrete Type Assumptions:** Never reference or `static_assert` against concrete user types.
