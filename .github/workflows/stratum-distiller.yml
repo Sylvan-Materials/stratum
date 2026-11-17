@@ -86,7 +86,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends cmake build-essential libcurl4-openssl-dev
-          git clone --depth 1 --branch ${{ env.LLAMA_CPP_REF }} https://github.com
+          git clone --depth 1 --branch ${{ env.LLAMA_CPP_REF }} https://github.com/ggml-org/llama.cpp.git
           cmake -S llama.cpp -B llama.cpp/build \
             -DCMAKE_C_COMPILER=gcc \
             -DCMAKE_CXX_COMPILER=g++ \
