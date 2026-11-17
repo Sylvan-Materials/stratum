@@ -3,28 +3,21 @@ name: Stratum C++ Spec Distiller
 on:
   workflow_dispatch:
     inputs:
-      spec_source:
-        description: 'Specification Repository'
+      spec_target:
+        description: 'Select Specification & Target File'
         required: true
-        default: 'cplusplus/draft'
+        default: 'cplusplus/draft :: concepts.tex'
         type: choice
         options:
-          - cplusplus/draft
-          - stdgraph/P1709
-      draft_chapter:
-        description: 'Official ISO C++ Draft Chapter (from cplusplus/draft/main/source/)'
-        required: true
-        default: 'concepts.tex'
-        type: choice
-        options:
-          - concepts.tex
-          - templates.tex
-          - ranges.tex
-          - meta.tex
-          - expressions.tex
-          - declarations.tex          
-      custom_chapter:
-        description: 'Optional custom .tex filename (overrides dropdown if set)'
+          - 'cplusplus/draft :: concepts.tex'
+          - 'cplusplus/draft :: meta.tex'
+          - 'cplusplus/draft :: templates.tex'
+          - 'cplusplus/draft :: ranges.tex'
+          - 'stdgraph/P1709 :: specification.tex'
+          - 'stdgraph/P1709 :: conventions.tex'
+          - 'stdgraph/P1709 :: algo_intro.tex'
+      custom_spec_target:
+        description: 'Optional override (format: owner/repo :: filename.tex)'
         required: false
         default: ''
         type: string
@@ -111,17 +104,31 @@ jobs:
             -DLLAMA_BUILD_TESTS=ON
           cmake --build llama.cpp/build --target llama-cli test-gbnf-validator -j$(nproc)
 
-      - name: Fetch & Strip ISO C++ Draft Chapter
+      - name: Resolve Target Specification & Chapter
+        id: resolve
         shell: bash
         run: |
-          mkdir -p scratchpad
-          SOURCE="${{ inputs.spec_source || 'cplusplus/draft' }}"
-          CHAPTER="${{ steps.resolve.outputs.CHAPTER }}"
+          TARGET="${{ inputs.custom_spec_target }}"
+          if [ -z "$TARGET" ]; then
+            TARGET="${{ inputs.spec_target || 'cplusplus/draft :: concepts.tex' }}"
+          fi
+
+          SOURCE="${TARGET%% :: *}"
+          CHAPTER="${TARGET##* :: }"
+
           if [ "$SOURCE" = "stdgraph/P1709" ]; then
             SUBDIR="tex"
+            PREFIX="p1709"
           else
             SUBDIR="source"
+            PREFIX="draft"
           fi
+
+          echo "SOURCE=$SOURCE" >> "$GITHUB_OUTPUT"
+          echo "SUBDIR=$SUBDIR" >> "$GITHUB_OUTPUT"
+          echo "PREFIX=$PREFIX" >> "$GITHUB_OUTPUT"
+          echo "CHAPTER=$CHAPTER" >> "$GITHUB_OUTPUT"
+          echo "ERA=${{ inputs.target_era || 'C++26' }}" >> "$GITHUB_OUTPUT"
           echo "Fetching $CHAPTER from $SOURCE/$SUBDIR..."
           curl -sSL --fail -o "scratchpad/$CHAPTER" \
             "https://raw.githubusercontent.com/$SOURCE/main/$SUBDIR/$CHAPTER"
@@ -138,6 +145,8 @@ jobs:
       - name: Assemble Distiller Prompt & Synthesize Constraints
         shell: bash
         run: |
+          SOURCE="${{ steps.resolve.outputs.SOURCE }}"
+          PREFIX="${{ steps.resolve.outputs.PREFIX }}"
           CHAPTER="${{ steps.resolve.outputs.CHAPTER }}"
           ERA="${{ steps.resolve.outputs.ERA }}"
           BASENAME="${CHAPTER%.tex}"
@@ -160,9 +169,9 @@ jobs:
             > scratchpad/raw_distill.txt
 
           # Extract starting from the first ### heading and strip the llama.cpp stats footer
-          awk '/^### A\./{flag=1} /^\[ Prompt:/{flag=0} flag' scratchpad/raw_distill.txt > "scratchpad/distilled-${BASENAME}.md"
-          if [ ! -s "scratchpad/distilled-${BASENAME}.md" ]; then
-            cp scratchpad/raw_distill.txt "scratchpad/distilled-${BASENAME}.md"
+          awk '/^### A\./{flag=1} /^\[ Prompt:/{flag=0} flag' scratchpad/raw_distill.txt > "scratchpad/distilled-${PREFIX}-${BASENAME}.md"
+          if [ ! -s "scratchpad/distilled-${PREFIX}-${BASENAME}.md" ]; then
+            cp scratchpad/raw_distill.txt "scratchpad/distilled-${PREFIX}-${BASENAME}.md"
           fi
 
       - name: Upload Distilled Spec Stratum for Human Review
