@@ -45,5 +45,5 @@ Immediately below Section 1, synthesize `TEST_CASE` and `SUBCASE` blocks using O
 2. **Directed Edge Insertion & Multiplicity:** Add directed edges (`1 -> 2`, `1 -> 3`) and verify `stratum::neighbors(graph, MockVertex{1})` equals `std::vector<MockVertex>{MockVertex{2}, MockVertex{3}}`.
 3. **Self-Loops & Disconnected Subgraphs:** Add a self-loop (`2 -> 2`) and verify `stratum::neighbors(graph, MockVertex{2})` equals `std::vector<MockVertex>{MockVertex{2}}`, while isolated `MockVertex{99}` remains empty.
 4. **Value Category Preservation:** Verify `stratum::vertex_id` returns `7` for mutable lvalue, `const` lvalue, and rvalue `MockVertex{7}`.
-5. **Sparse & High-Index Boundary Safety:** Insert an edge between `MockVertex{1000000}` and `MockVertex{9999999}` and verify traversal succeeds cleanly without out-of-bounds access.
+5. **Sparse & High-Index Boundary Safety:** Insert a directed edge from `MockVertex{1000000}` to `MockVertex{9999999}` and verify `stratum::neighbors(graph, MockVertex{1000000})` equals `std::vector<MockVertex>{MockVertex{9999999}}` while `stratum::neighbors(graph, MockVertex{9999999}).empty() == true`.
 6. **Two-Tier CPO Dispatch Priority:** Verify `stratum::vertex_id(CustomTagVertex{42}) == 42` and test directed edge traversal on `stratum::AdjacencyList<CustomTagVertex>`.
