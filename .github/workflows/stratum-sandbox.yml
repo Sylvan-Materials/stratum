@@ -134,7 +134,7 @@ jobs:
           echo -e "\n=== G++ COMPILE & ASAN/UBSAN TEST RUN ===" >> scratchpad/validation.log
           g++ -std=c++2c -O1 -g \
             -fsanitize=address,undefined \
-            --fconcepts-diagnostics-depth=2 \
+            -fconcepts-diagnostics-depth=2 \
             -fno-omit-frame-pointer \
             -Wall -Wextra -pedantic \
             -Iscratchpad -Iscratchpad/doctest \
