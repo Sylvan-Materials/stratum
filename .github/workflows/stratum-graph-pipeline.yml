@@ -13,9 +13,9 @@ env:
   MODEL_REPO: Qwen/Qwen2.5-Coder-7B-Instruct-GGUF
   MODEL_FILE: qwen2.5-coder-7b-instruct-q4_k_m.gguf
   LLAMA_CPP_REF: master
-  CTX_PASS1: 8192
-  CTX_PASS2: 12288
-  CTX_PASS3: 16384
+  CTX_PASS1: 16384
+  CTX_PASS2: 24576
+  CTX_PASS3: 32768
 
 jobs:
   synthesize-and-verify-graph:
@@ -77,7 +77,11 @@ jobs:
           mkdir -p scratchpad/doctest
 
           # Combine all approved distilled specs (if present) into one preamble
-          : > scratchpad/spec_preamble.md
+          echo "# Approved C++26 Language & Standard Graph Specifications" >> scratchpad/spec_preamble.md
+          cat strata/specs/distilled-draft-concepts.md \
+              strata/specs/distilled-P1709-specification.md \
+              >> scratchpad/spec_preamble.md
+          printf '\n---\n\n' >> scratchpad/spec_preamble.md
           if ls strata/specs/*.md 1> /dev/null 2>&1; then
             echo "# Approved Language & Standard Specifications" >> scratchpad/spec_preamble.md
             cat strata/specs/*.md >> scratchpad/spec_preamble.md
@@ -94,6 +98,8 @@ jobs:
             -m ".cache/models/$MODEL_FILE" \
             -f scratchpad/prompt_pass1.md \
             -st --temp 0.0 --seed 42 --log-disable --no-display-prompt \
+            --repeat-penalty 1.15 \
+            -n 1200 \
             -t $(nproc) -c $CTX_PASS1 \
             > scratchpad/raw_pass1.txt
 
@@ -120,6 +126,8 @@ jobs:
             -m ".cache/models/$MODEL_FILE" \
             -f scratchpad/prompt_pass2.md \
             -st --temp 0.0 --seed 42 --log-disable --no-display-prompt \
+            --repeat-penalty 1.15 \
+            -n 1200 \
             -t $(nproc) -c $CTX_PASS2 \
             > scratchpad/raw_pass2.txt
 
@@ -156,6 +164,8 @@ jobs:
             -m ".cache/models/$MODEL_FILE" \
             -f scratchpad/prompt_pass3.md \
             -st --temp 0.0 --seed 42 --log-disable --no-display-prompt \
+            --repeat-penalty 1.15 \
+            -n 1200 \
             -t $(nproc) -c $CTX_PASS3 \
             > scratchpad/raw_pass3.txt
 
