@@ -49,20 +49,6 @@ jobs:
       - name: Checkout Stratum Repository
         uses: actions/checkout@v4
 
-      - name: Resolve Target Chapter Name
-        id: resolve
-        shell: bash
-        run: |
-          if [ -n "${{ inputs.custom_chapter }}" ]; then
-            CHAPTER="${{ inputs.custom_chapter }}"
-          elif [ -n "${{ inputs.draft_chapter }}" ]; then
-            CHAPTER="${{ inputs.draft_chapter }}"
-          else
-            CHAPTER="concepts.tex"
-          fi
-          echo "CHAPTER=$CHAPTER" >> "$GITHUB_OUTPUT"
-          echo "ERA=${{ inputs.target_era || 'C++26' }}" >> "$GITHUB_OUTPUT"
-
       - name: Cache GGUF Model
         id: cache-model
         uses: actions/cache@v4
