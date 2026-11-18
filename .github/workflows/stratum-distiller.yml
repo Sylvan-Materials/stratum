@@ -148,6 +148,8 @@ jobs:
             -f scratchpad/combined_distill_prompt.md \
             -st \
             --temp 0.0 \
+            --repeat-penalty 1.15 \
+            -n 1200 \
             --seed 42 \
             --log-disable \
             --no-display-prompt \
