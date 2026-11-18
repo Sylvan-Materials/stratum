@@ -1,0 +1,210 @@
+name: Stratum Graph Synthesis & Amet Verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'strata/specs/**'
+      - 'strata/graph/**'
+      - '.github/workflows/stratum-graph-pipeline.yml'
+
+env:
+  MODEL_REPO: Qwen/Qwen2.5-Coder-7B-Instruct-GGUF
+  MODEL_FILE: qwen2.5-coder-7b-instruct-q4_k_m.gguf
+  LLAMA_CPP_REF: master
+  CTX_PASS1: 8192
+  CTX_PASS2: 12288
+  CTX_PASS3: 16384
+
+jobs:
+  synthesize-and-verify-graph:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Stratum Repository
+        uses: actions/checkout@v4
+
+      - name: Cache GGUF Model
+        id: cache-model
+        uses: actions/cache@v4
+        with:
+          path: .cache/models
+          key: gguf-${{ env.MODEL_FILE }}
+
+      - name: Download GGUF Model (Cache Miss Only)
+        if: steps.cache-model.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          mkdir -p .cache/models
+          curl -sSL --fail -o ".cache/models/$MODEL_FILE" \
+            "https://huggingface.co/$MODEL_REPO/resolve/main/$MODEL_FILE"
+
+      - name: Cache Compiled llama-cli
+        id: cache-llama-bin
+        uses: actions/cache@v4
+        with:
+          path: llama.cpp/build/bin
+          key: llama-cli-${{ runner.os }}-${{ env.LLAMA_CPP_REF }}-portable-v1
+          restore-keys: |
+            llama-cli-${{ runner.os }}-
+
+      - name: Build llama-cli (Cache Miss Only)
+        if: steps.cache-llama-bin.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends cmake build-essential libcurl4-openssl-dev
+          git clone --depth 1 --branch ${{ env.LLAMA_CPP_REF }} "https://github.com/ggml-org/llama.cpp.git"
+          cmake -S llama.cpp -B llama.cpp/build \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DGGML_NATIVE=OFF \
+            -DGGML_AVX2=ON \
+            -DGGML_FMA=ON \
+            -DGGML_F16C=ON \
+            -DLLAMA_BUILD_EXAMPLES=OFF \
+            -DLLAMA_BUILD_TOOLS=ON \
+            -DLLAMA_BUILD_TESTS=ON
+          cmake --build llama.cpp/build --target llama-cli test-gbnf-validator -j$(nproc)
+
+      - name: Prepare Workspace & Spec Preamble
+        shell: bash
+        run: |
+          mkdir -p scratchpad/include/graph/container/traits
+          mkdir -p scratchpad/include/graph/views
+          mkdir -p scratchpad/include/graph/adaptors
+          mkdir -p scratchpad/doctest
+
+          # Combine all approved distilled specs (if present) into one preamble
+          : > scratchpad/spec_preamble.md
+          if ls strata/specs/*.md 1> /dev/null 2>&1; then
+            echo "# Approved Language & Standard Specifications" >> scratchpad/spec_preamble.md
+            cat strata/specs/*.md >> scratchpad/spec_preamble.md
+            printf '\n---\n\n' >> scratchpad/spec_preamble.md
+          fi
+
+      - name: Pass 1 - Synthesize & Syntax-Check Core Graph (graph/graph.hpp)
+        shell: bash
+        run: |
+          set -o pipefail
+          cat scratchpad/spec_preamble.md strata/graph/01-graph-core.md > scratchpad/prompt_pass1.md
+
+          ./llama.cpp/build/bin/llama-cli \
+            -m ".cache/models/$MODEL_FILE" \
+            -f scratchpad/prompt_pass1.md \
+            -st --temp 0.0 --seed 42 --log-disable --no-display-prompt \
+            -t $(nproc) -c $CTX_PASS1 \
+            > scratchpad/raw_pass1.txt
+
+          awk '/^```cpp/{flag=1; next} /^```/{flag=0} flag' scratchpad/raw_pass1.txt > scratchpad/include/graph/graph.hpp
+          if [ ! -s scratchpad/include/graph/graph.hpp ]; then
+            cp scratchpad/raw_pass1.txt scratchpad/include/graph/graph.hpp
+          fi
+
+          echo "=== PASS 1: CLANG SYNTAX CHECK (graph.hpp) ===" > scratchpad/validation.log
+          clang++ -std=c++2c -fsyntax-only -Wall -Wextra -pedantic \
+            -Iscratchpad/include \
+            scratchpad/include/graph/graph.hpp 2>&1 | tee -a scratchpad/validation.log
+
+      - name: Pass 2 - Synthesize & Syntax-Check Dynamic Adjacency Graph
+        shell: bash
+        run: |
+          set -o pipefail
+          cat scratchpad/spec_preamble.md strata/graph/02-vov-traits-and-dynamic-graph.md > scratchpad/prompt_pass2.md
+          printf '\n\n## Previously Synthesized Dependency (graph/graph.hpp)\n```cpp\n' >> scratchpad/prompt_pass2.md
+          cat scratchpad/include/graph/graph.hpp >> scratchpad/prompt_pass2.md
+          printf '\n```\n' >> scratchpad/prompt_pass2.md
+
+          ./llama.cpp/build/bin/llama-cli \
+            -m ".cache/models/$MODEL_FILE" \
+            -f scratchpad/prompt_pass2.md \
+            -st --temp 0.0 --seed 42 --log-disable --no-display-prompt \
+            -t $(nproc) -c $CTX_PASS2 \
+            > scratchpad/raw_pass2.txt
+
+          awk '/^```cpp/{flag=1; next} /^```/{flag=0} flag' scratchpad/raw_pass2.txt > scratchpad/include/graph/container/dynamic_adjacency_graph.hpp
+          if [ ! -s scratchpad/include/graph/container/dynamic_adjacency_graph.hpp ]; then
+            cp scratchpad/raw_pass2.txt scratchpad/include/graph/container/dynamic_adjacency_graph.hpp
+          fi
+
+          # Emit forwarding header for vov_graph_traits.hpp
+          cat << 'EOF' > scratchpad/include/graph/container/traits/vov_graph_traits.hpp
+          #ifndef STRATUM_GRAPH_VOV_GRAPH_TRAITS_HPP
+          #define STRATUM_GRAPH_VOV_GRAPH_TRAITS_HPP
+          #include "graph/container/dynamic_adjacency_graph.hpp"
+          #endif
+          EOF
+
+          echo -e "\n=== PASS 2: CLANG SYNTAX CHECK (dynamic_adjacency_graph.hpp) ===" >> scratchpad/validation.log
+          clang++ -std=c++2c -fsyntax-only -Wall -Wextra -pedantic \
+            -Iscratchpad/include \
+            scratchpad/include/graph/container/dynamic_adjacency_graph.hpp 2>&1 | tee -a scratchpad/validation.log
+
+      - name: Pass 3 - Synthesize & Syntax-Check Views & Filtered Adaptors
+        shell: bash
+        run: |
+          set -o pipefail
+          cat scratchpad/spec_preamble.md strata/graph/03-views-and-adaptors.md > scratchpad/prompt_pass3.md
+          printf '\n\n## Previously Synthesized Dependency (graph/graph.hpp)\n```cpp\n' >> scratchpad/prompt_pass3.md
+          cat scratchpad/include/graph/graph.hpp >> scratchpad/prompt_pass3.md
+          printf '\n```\n\n## Previously Synthesized Dependency (dynamic_adjacency_graph.hpp)\n```cpp\n' >> scratchpad/prompt_pass3.md
+          cat scratchpad/include/graph/container/dynamic_adjacency_graph.hpp >> scratchpad/prompt_pass3.md
+          printf '\n```\n' >> scratchpad/prompt_pass3.md
+
+          ./llama.cpp/build/bin/llama-cli \
+            -m ".cache/models/$MODEL_FILE" \
+            -f scratchpad/prompt_pass3.md \
+            -st --temp 0.0 --seed 42 --log-disable --no-display-prompt \
+            -t $(nproc) -c $CTX_PASS3 \
+            > scratchpad/raw_pass3.txt
+
+          awk '/^```cpp/{flag=1; next} /^```/{flag=0} flag' scratchpad/raw_pass3.txt > scratchpad/include/graph/views/graph_views.hpp
+          if [ ! -s scratchpad/include/graph/views/graph_views.hpp ]; then
+            cp scratchpad/raw_pass3.txt scratchpad/include/graph/views/graph_views.hpp
+          fi
+
+          # Emit forwarding headers for amet's exact include paths
+          for hdr in views/vertexlist.hpp views/incidence.hpp views/edgelist.hpp adaptors/filtered_graph.hpp; do
+            cat << 'EOF' > "scratchpad/include/graph/$hdr"
+          #pragma once
+          #include "graph/views/graph_views.hpp"
+          EOF
+          done
+
+          echo -e "\n=== PASS 3: CLANG SYNTAX CHECK (graph_views.hpp) ===" >> scratchpad/validation.log
+          clang++ -std=c++2c -fsyntax-only -Wall -Wextra -pedantic \
+            -Iscratchpad/include \
+            scratchpad/include/graph/views/graph_views.hpp 2>&1 | tee -a scratchpad/validation.log
+
+      - name: Pass 4 - Clone Amet & Execute Real-World Doctest Suite
+        shell: bash
+        run: |
+          set -o pipefail
+
+          git clone --depth 1 "https://github.com/Sylvan-Materials/amet.git" scratchpad/amet
+          curl -sSL --fail -o scratchpad/doctest/doctest.h \
+            "https://raw.githubusercontent.com/doctest/doctest/master/doctest/doctest.h"
+
+          echo -e "\n=== PASS 4: G++ COMPILE & ASAN/UBSAN RUN AGAINST AMET ===" >> scratchpad/validation.log
+          g++ -std=c++2c -O1 -g \
+            -fconcepts-diagnostics-depth=2 \
+            -fsanitize=address,undefined \
+            -fno-omit-frame-pointer \
+            -Wall -Wextra \
+            -Iscratchpad/include \
+            -Iscratchpad/amet/include \
+            -Iscratchpad \
+            scratchpad/amet/test/src/test.cpp -o scratchpad/run_amet_tests 2>&1 | tee -a scratchpad/validation.log
+
+          ./scratchpad/run_amet_tests 2>&1 | tee -a scratchpad/validation.log
+
+      - name: Upload Synthesized Headers & Validation Log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stratum-graph-fruition
+          path: |
+            scratchpad/include/
+            scratchpad/validation.log
+          retention-days: 7

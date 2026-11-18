@@ -1,0 +1,56 @@
+# Stratum Module Synthesis Contract: Core Graph CPOs, Concepts & Descriptors
+
+You are the Stratum Automation Code Generator. Translate this specification into a single, production-grade, header-only C++26 component (`graph/graph.hpp`) adhering strictly to Stratum's design rules.
+
+## 1. Explicit Syntactic Constraints (Mandatory)
+- **Standard Headers:** Include `<concepts>`, `<cstddef>`, `<cstdint>`, `<functional>`, `<iterator>`, `<ranges>`, `<tuple>`, `<type_traits>`, `<utility>`, and `<vector>` explicitly at the top of the file.
+- **Explicit Types & Trailing Returns:** Declare concrete variable types explicitly inside function bodies. Reserve `auto` strictly for trailing return placeholders (`-> decltype(auto)` or `-> void`) and concept-constrained return types (`-> std::integral auto`). Never write `const auto` before a function name, and never place `auto` inside template argument lists or `requires(...)` parameter lists.
+- **Separate Non-Template Niebloid Structs:** Declare every CPO functor (`vertices_fn`, `edges_fn`, `vertex_id_fn`, `target_id_fn`, `source_id_fn`, `vertex_value_fn`, `edge_value_fn`) as a plain non-template `struct`, followed immediately by its `inline constexpr` Niebloid instance variable.
+- **Constrained Overload Sets (No Unconstrained `operator()`):**
+  - Inside each CPO functor struct, implement each customization tier as a separate templated `operator()` overload carrying a parameterized `requires requires(...)` clause on its signature.
+  - Inside signature `requires` clauses, use `std::declval<FunctorType>()` as the tag argument to `tag_invoke` (never `*this` or `FunctorType{}` inside the incomplete struct body). Inside the evaluated function body, invoke `tag_invoke(*this, ...)` or the member access/method directly (never call `std::declval` inside an evaluated body, and never recursively call the outer Niebloid instance).
+  - Negate higher-priority `tag_invoke` constraints on fallback overloads to prevent overload ambiguity.
+- **Concept Syntax:** Every `concept` declaration must begin with an explicit `template <...>` parameter header. Inside `requires { ... }` blocks, use `{ expr } -> ConceptName;` for value expressions and `requires ConceptName<Type>;` for type constraints.
+
+## 2. Target Component Archetype (`namespace graph` & `namespace amet`)
+- **Purpose:** Foundational graph abstraction layer supporting all seven Stratum container archetypes (Standard Adjacency Lists, Static CSR, Zero-Storage Procedural Graphs, PCSR, \(k^2\)-Trees, HBA, and Flat Edge Lists) while providing exact API compatibility for `amet`.
+- **Root Namespaces:** Define all core graph CPOs, concepts, type aliases, and copyable ingestion descriptors directly inside `namespace graph`. Define `viewable_incidence_graph` inside `namespace amet` (aliased or constrained directly on `graph::incidence_graph`).
+
+## 3. Exact Top-to-Bottom Declaration Sequence (Mandatory)
+
+### Part A: Inside `namespace graph`
+1. **ADL Poison-Pill:** Immediately after opening `namespace graph`, declare a zero-parameter `void tag_invoke();` function.
+2. **Primary Graph CPOs (Functors + `inline constexpr` Instances):**
+   - **`vertices` (`vertices_fn`):** Takes `(G&& g)`. Overload A checks `tag_invoke(std::declval<vertices_fn>(), gx)`; Overload B checks `gx.vertices()`; Overload C checks `std::ranges::forward_range<G>` directly (so minimal structural ranges like `MockGraph` with `begin()`/`end()` work out of the box) and returns `std::forward<G>(g)`.
+   - **`edges` (`edges_fn`):** Takes `(G&& g, const U& u)`. Overload A checks `tag_invoke(std::declval<edges_fn>(), gx, ux)`; Overload B checks `gx.edges(ux)`.
+   - **`vertex_id` (`vertex_id_fn`):**
+     - Binary overload taking `(G&& g, const U& u)`: checks `tag_invoke(std::declval<vertex_id_fn>(), gx, ux)` or `gx.vertex_id(ux)`.
+     - Unary overload taking `(const U& u)`: checks `tag_invoke(std::declval<vertex_id_fn>(), ux)`, `ux.id()`, or `ux.id` (with mutually exclusive priority guards).
+   - **`target_id` (`target_id_fn`):**
+     - Binary overload taking `(G&& g, const E& e)`: checks `tag_invoke(std::declval<target_id_fn>(), gx, ex)` or `gx.target_id(ex)`.
+     - Unary overload taking `(const E& e)`: checks `tag_invoke(std::declval<target_id_fn>(), ex)`, `ex.target_id()`, or `ex.target_id`.
+   - **`source_id` (`source_id_fn`):**
+     - Binary overload taking `(G&& g, const E& e)`: checks `tag_invoke(std::declval<source_id_fn>(), gx, ex)` or `gx.source_id(ex)`.
+     - Unary overload taking `(const E& e)`: checks `tag_invoke(std::declval<source_id_fn>(), ex)`, `ex.source_id()`, or `ex.source_id`.
+   - **`vertex_value` (`vertex_value_fn`):** Takes `(G&& g, const U& u)`. Checks `tag_invoke(std::declval<vertex_value_fn>(), gx, ux)` or `gx.vertex_value(ux)`.
+   - **`edge_value` (`edge_value_fn`):** Takes `(G&& g, const E& e)`. Checks `tag_invoke(std::declval<edge_value_fn>(), gx, ex)` or `gx.edge_value(ex)`.
+3. **Graph Associated Type Traits:**
+   - `template <typename G> using vertex_range_t = decltype(graph::vertices(std::declval<G&>()));`
+   - `template <typename G> using vertex_iterator_t = std::ranges::iterator_t<vertex_range_t<G>>;`
+   - `template <typename G> using vertex_t = std::ranges::range_value_t<vertex_range_t<G>>;`
+   - `template <typename G> using vertex_id_t = decltype(graph::vertex_id(std::declval<G&>(), std::declval<vertex_t<G>>()));` (falling back to unary `graph::vertex_id(std::declval<vertex_t<G>>())` if binary is not defined—implement via a helper variable/type trait or constrained overload on `vertex_id_fn`).
+   - `template <typename G> using edge_range_t = decltype(graph::edges(std::declval<G&>(), std::declval<vertex_t<G>>()));`
+   - `template <typename G> using edge_t = std::ranges::range_value_t<edge_range_t<G>>;`
+4. **Core Graph Concepts:**
+   - **`vertex_list_graph`:** `template <typename G> concept vertex_list_graph = requires(G& g) { { graph::vertices(g) } -> std::ranges::forward_range; };`
+   - **`incidence_graph`:** `template <typename G> concept incidence_graph = vertex_list_graph<G> && requires(G& g, vertex_t<G> u) { { graph::edges(g, u) } -> std::ranges::forward_range; };`
+   - **`viewable_incidence_graph`:** `template <typename G> concept viewable_incidence_graph = vertex_list_graph<G>;` (allowing both full incidence graphs and minimal structural vertex-range fixtures like `MockGraph` in `amet` to satisfy viewability cleanly).
+5. **Copyable Ingestion Descriptors (For `load_vertices` & `load_edges`):**
+   - **`copyable_vertex_t`:** `template <typename VId = std::size_t, typename VV = void> struct copyable_vertex_t` with members `VId id{}; VV value{};` (and a partial specialization `template <typename VId> struct copyable_vertex_t<VId, void>` with only `VId id{};`).
+   - **`copyable_edge_t`:** `template <typename VId = std::size_t, typename EV = void> struct copyable_edge_t` with members `VId source_id{}; VId target_id{}; EV value{};` (and a partial specialization `template <typename VId> struct copyable_edge_t<VId, void>` with only `VId source_id{}; VId target_id{};`).
+
+### Part B: Inside `namespace amet`
+- Define `template <typename G> concept viewable_incidence_graph = graph::viewable_incidence_graph<G>;` so `REQUIRE(amet::viewable_incidence_graph<MockGraph>);` in `amet/test/src/test.cpp` compiles and passes directly.
+
+## 4. Output Instruction
+Emit ONLY a single ```cpp code block containing the complete, self-contained C++26 header enclosed within header guard defines (`#ifndef STRATUM_GRAPH_GRAPH_HPP` / `#define STRATUM_GRAPH_GRAPH_HPP` / `#endif`). Do not include conversational remarks before or after the block.
