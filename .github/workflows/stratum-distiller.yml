@@ -115,6 +115,7 @@ jobs:
           echo "PREFIX=$PREFIX" >> "$GITHUB_OUTPUT"
           echo "CHAPTER=$CHAPTER" >> "$GITHUB_OUTPUT"
           echo "ERA=${{ inputs.target_era || 'C++26' }}" >> "$GITHUB_OUTPUT"
+          mkdir -p scratchpad
           echo "Fetching $CHAPTER from $SOURCE/$SUBDIR..."
           curl -sSL --fail -o "scratchpad/$CHAPTER" \
             "https://raw.githubusercontent.com/$SOURCE/main/$SUBDIR/$CHAPTER"
