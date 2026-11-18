@@ -11,6 +11,7 @@ You are the Stratum Automation Code Generator. Translate this specification into
   - Inside signature `requires` clauses, use `std::declval<FunctorType>()` as the tag argument to `tag_invoke` (never `*this` or `FunctorType{}` inside the incomplete struct body). Inside the evaluated function body, invoke `tag_invoke(*this, ...)` or the member access/method directly (never call `std::declval` inside an evaluated body, and never recursively call the outer Niebloid instance).
   - Negate higher-priority `tag_invoke` constraints on fallback overloads to prevent overload ambiguity.
 - **Concept Syntax:** Every `concept` declaration must begin with an explicit `template <...>` parameter header. Inside `requires { ... }` blocks, use `{ expr } -> ConceptName;` for value expressions and `requires ConceptName<Type>;` for type constraints.
+- **Consistent Parameter Names (g, u, e):** Name graph parameters g, vertex parameters u, and edge parameters e consistently in both function signatures (G&& g, const U& u) and requires(...) parameter lists, and use those exact parameter names (std::forward<G>(g), u, e) inside the function body. Never invent dummy names like gx, ux, or ex.
 
 ## 2. Target Component Archetype (`namespace graph` & `namespace amet`)
 - **Purpose:** Foundational graph abstraction layer supporting all seven Stratum container archetypes (Standard Adjacency Lists, Static CSR, Zero-Storage Procedural Graphs, PCSR, \(k^2\)-Trees, HBA, and Flat Edge Lists) while providing exact API compatibility for `amet`.
@@ -21,19 +22,20 @@ You are the Stratum Automation Code Generator. Translate this specification into
 ### Part A: Inside `namespace graph`
 1. **ADL Poison-Pill:** Immediately after opening `namespace graph`, declare a zero-parameter `void tag_invoke();` function.
 2. **Primary Graph CPOs (Functors + `inline constexpr` Instances):**
-   - **`vertices` (`vertices_fn`):** Takes `(G&& g)`. Overload A checks `tag_invoke(std::declval<vertices_fn>(), gx)`; Overload B checks `gx.vertices()`; Overload C checks `std::ranges::forward_range<G>` directly (so minimal structural ranges like `MockGraph` with `begin()`/`end()` work out of the box) and returns `std::forward<G>(g)`.
-   - **`edges` (`edges_fn`):** Takes `(G&& g, const U& u)`. Overload A checks `tag_invoke(std::declval<edges_fn>(), gx, ux)`; Overload B checks `gx.edges(ux)`.
+   - **`vertices` (`vertices_fn`):** Takes `(G&& g)`. Overload A checks `requires(G&& g) { tag_invoke(std::declval<vertices_fn>(), std::forward<G>(g)); }` and returns `tag_invoke(*this, std::forward<G>(g))`; Overload B checks `requires(G&& g) { std::forward<G>(g).vertices(); }` and returns `std::forward<G>(g).vertices()`; Overload C checks `std::ranges::forward_range<G>` directly (so minimal structural ranges like `MockGraph` with `begin()`/`end()` work out of the box) and returns `std::forward<G>(g)`.
+   - **`edges` (`edges_fn`):** Takes `(G&& g, const U& u)`. Overload A checks `requires(G&& g, const U& u) { tag_invoke(std::declval<edges_fn>(), std::forward<G>(g), u); }` and returns `tag_invoke(*this, std::forward<G>(g), u)`; Overload B checks `requires(G&& g, const U& u) { std::forward<G>(g).edges(u); }` and returns `std::forward<G>(g).edges(u)`.
    - **`vertex_id` (`vertex_id_fn`):**
-     - Binary overload taking `(G&& g, const U& u)`: checks `tag_invoke(std::declval<vertex_id_fn>(), gx, ux)` or `gx.vertex_id(ux)`.
-     - Unary overload taking `(const U& u)`: checks `tag_invoke(std::declval<vertex_id_fn>(), ux)`, `ux.id()`, or `ux.id` (with mutually exclusive priority guards).
+     - Binary overload taking `(G&& g, const U& u)`: checks `tag_invoke(std::declval<vertex_id_fn>(), std::forward<G>(g), u)` or `std::forward<G>(g).vertex_id(u)`.
+     - Unary overload taking `(const U& u)`: checks `tag_invoke(std::declval<vertex_id_fn>(), u)`, `u.id()`, or `u.id` (with mutually exclusive priority guards).
    - **`target_id` (`target_id_fn`):**
-     - Binary overload taking `(G&& g, const E& e)`: checks `tag_invoke(std::declval<target_id_fn>(), gx, ex)` or `gx.target_id(ex)`.
-     - Unary overload taking `(const E& e)`: checks `tag_invoke(std::declval<target_id_fn>(), ex)`, `ex.target_id()`, or `ex.target_id`.
+     - Binary overload taking `(G&& g, const E& e)`: checks `tag_invoke(std::declval<target_id_fn>(), std::forward<G>(g), e)` or `std::forward<G>(g).target_id(e)`.
+     - Unary overload taking `(const E& e)`: checks `tag_invoke(std::declval<target_id_fn>(), e)`, `e.target_id()`, or `e.target_id`.
    - **`source_id` (`source_id_fn`):**
-     - Binary overload taking `(G&& g, const E& e)`: checks `tag_invoke(std::declval<source_id_fn>(), gx, ex)` or `gx.source_id(ex)`.
-     - Unary overload taking `(const E& e)`: checks `tag_invoke(std::declval<source_id_fn>(), ex)`, `ex.source_id()`, or `ex.source_id`.
-   - **`vertex_value` (`vertex_value_fn`):** Takes `(G&& g, const U& u)`. Checks `tag_invoke(std::declval<vertex_value_fn>(), gx, ux)` or `gx.vertex_value(ux)`.
-   - **`edge_value` (`edge_value_fn`):** Takes `(G&& g, const E& e)`. Checks `tag_invoke(std::declval<edge_value_fn>(), gx, ex)` or `gx.edge_value(ex)`.
+     - Binary overload taking `(G&& g, const E& e)`: checks `tag_invoke(std::declval<source_id_fn>(), std::forward<G>(g), e)` or `std::forward<G>(g).source_id(e)`.
+     - Unary overload taking `(const E& e)`: checks `tag_invoke(std::declval<source_id_fn>(), e)`, `e.source_id()`, or `e.source_id`.
+   - **`vertex_value` (`vertex_value_fn`):** Takes `(G&& g, const U& u)`. Checks `tag_invoke(std::declval<vertex_value_fn>(), std::forward<G>(g), u)` or `std::forward<G>(g).vertex_value(u)`.
+   - **`edge_value` (`edge_value_fn`):** Takes `(G&& g, const E& e)`. Checks `tag_invoke(std::declval<edge_value_fn>(), std::forward<G>(g), e)` or `std::forward<G>(g).edge_value(e)`.
+
 3. **Graph Associated Type Traits:**
    - `template <typename G> using vertex_range_t = decltype(graph::vertices(std::declval<G&>()));`
    - `template <typename G> using vertex_iterator_t = std::ranges::iterator_t<vertex_range_t<G>>;`
