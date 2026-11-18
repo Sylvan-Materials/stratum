@@ -77,11 +77,7 @@ jobs:
           mkdir -p scratchpad/doctest
 
           # Combine all approved distilled specs (if present) into one preamble
-          echo "# Approved C++26 Language & Standard Graph Specifications" >> scratchpad/spec_preamble.md
-          cat strata/specs/distilled-draft-concepts.md \
-              strata/specs/distilled-P1709-specification.md \
-              >> scratchpad/spec_preamble.md
-          printf '\n---\n\n' >> scratchpad/spec_preamble.md
+          : > scratchpad/spec_preamble.md
           if ls strata/specs/*.md 1> /dev/null 2>&1; then
             echo "# Approved Language & Standard Specifications" >> scratchpad/spec_preamble.md
             cat strata/specs/*.md >> scratchpad/spec_preamble.md
