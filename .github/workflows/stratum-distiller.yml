@@ -184,6 +184,7 @@ jobs:
       - name: Create Pull Request with Distilled Stratum
         uses: peter-evans/create-pull-request@v7
         with:
+          add-paths: strata/specs
           commit-message: "chore(stratum): distill ${{ steps.resolve.outputs.PREFIX }}-${{ steps.resolve.outputs.CHAPTER }}"
           title: "Distilled Stratum: ${{ steps.resolve.outputs.SOURCE }} (${{ steps.resolve.outputs.CHAPTER }})"
           body: |
