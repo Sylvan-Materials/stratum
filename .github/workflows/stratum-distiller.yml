@@ -104,7 +104,7 @@ jobs:
 
           if [ "$SOURCE" = "stdgraph/P1709" ]; then
             SUBDIR="tex"
-            PREFIX="p1709"
+            PREFIX="P1709"
           else
             SUBDIR="source"
             PREFIX="draft"
