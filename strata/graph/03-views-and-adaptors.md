@@ -36,6 +36,7 @@ First emit `} // namespace graph` on its own line to close `namespace graph` com
 - `template <typename VId> struct tuple_size<graph::edge_info<VId, void>> : integral_constant<size_t, 2> {};`
 - Corresponding `template <size_t I, ...> struct tuple_element<I, ...>` partial specializations using `using type = decltype(declval<...>().template get<I>());`.
 Close `namespace std` (`} // namespace std`) immediately after.
+- Inside every tuple_element specialization, write .template get<I>() with the .template keyword before get (never .get<I>() without .template).
 
 ### Part C: Range Views inside `namespace graph::views`
 Open `namespace graph::views {` and define:
@@ -44,6 +45,8 @@ Open `namespace graph::views {` and define:
 3. **`neighbors(G&& g, const U& u)`:** Yields target vertices or target IDs adjacent to `u` across `graph::edges(g, u)`.
 4. **`edgelist(G&& g)`:** Yields `graph::edge_info` elements `{source_id, target_id, uv}` across all vertices and incident edges in `g`.
 Close `namespace graph::views` (`} // namespace graph::views`).
+5. **Explicitly state template <typename G, typename VVF>** for vertexlist(G&& g, VVF&& vvf) so VVF is declared in the template parameter list.
+6. **Explicitly instruct the generator to use** std::views::transform(...) (or std::ranges::transform_view), never std::transform_view (which does not exist in namespace std).
 
 ### Part D: Branch-Pruning Adaptor inside `namespace graph` & `namespace graph::adaptors`
 Open `namespace graph {` and define:
