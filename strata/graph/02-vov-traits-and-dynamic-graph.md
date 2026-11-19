@@ -34,7 +34,7 @@ Inside `vov_graph_traits`, expose these exact public type aliases:
 - `static constexpr bool is_undirected = Undirected;`
 
 ### 2. Internal Edge & Vertex Descriptor Types
-Define these two struct templates at namespace scope immediately after `vov_graph_traits` (above `dynamic_adjacency_graph`). Suffix data member names with a trailing underscore (`_`) so they never collide with accessor member functions, and always use bare `auto` on the left of every `->` trailing return type (e.g., `auto value() & noexcept -> EV&`, never `auto& value()`):
+Define these two struct templates at namespace scope immediately after `vov_graph_traits` (above `dynamic_adjacency_graph`). Suffix data member names with a trailing underscore (`_`) so they never collide with accessor member functions, and always use bare `auto` on the left of every `->` trailing return type (e.g., `Declare mutable and const accessors using plain auto without ref-qualifiers before noexcept: auto value() noexcept -> EV& and auto value() const noexcept -> const EV& (never auto&).`):
 - **`template <typename VId, typename EV = void> struct dynamic_edge`:**
   - Primary template stores `VId source_id_{}; VId target_id_{}; EV value_{};` and provides member accessors `source_id()`, `target_id()`, and mutable/`const` `value()`.
   - Partial specialization `template <typename VId> struct dynamic_edge<VId, void>` stores only `VId source_id_{}; VId target_id_{};` and provides `source_id()` and `target_id()`.
@@ -64,6 +64,7 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
   2. `auto reserve_edges([[maybe_unused]] std::size_t count) -> void` — no-op using `[[maybe_unused]]`.
   3. **`load_vertices(VRng&& vrng, VProj vproj = {}) -> void`:**
      - Iterates over every element `elem` in `vrng` and invokes `auto projected = std::invoke(vproj, elem);`.
+     - Declare vertex_id_type id{}; (in load_vertices) and vertex_id_type src{}; vertex_id_type dst{}; (in load_edges) before the if constexpr chain so they remain in scope after the branches close.
      - Detect the shape of `projected` strictly using structural `if constexpr (requires { ... })` checks (never `std::is_same_v` on external trait names):
        - `if constexpr (requires { projected.id; })` — extracts `vertex_id_type id = static_cast<vertex_id_type>(projected.id);` (and assigns `projected.value` when `!std::is_void_v<vertex_value_type>` and `requires { projected.value; }`).
        - `else if constexpr (requires { std::get<0>(projected); })` — extracts `vertex_id_type id = static_cast<vertex_id_type>(std::get<0>(projected));` (and assigns `std::get<1>(projected)` when `!std::is_void_v<vertex_value_type>`).
@@ -84,7 +85,7 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
   - `auto target_id(const edge_type& e) const noexcept -> vertex_id_type` (returns `e.target_id()`)
   - `auto source_id(const edge_type& e) const noexcept -> vertex_id_type` (returns `e.source_id()`)
   - `auto vertex_value(vertex_type& u) -> vertex_value_type&` and `const` overload (enabled via `requires (!std::is_void_v<vertex_value_type>)`)
-  - `auto edge_value(edge_type& e) -> edge_value_type&` and `const` overload (enabled via `requires (!std::is_void_v<edge_value_type>)`)
+  - `auto edge_value(edge_type& e) -> edge_value_type& and auto edge_value(const edge_type& e) const -> const edge_value_type& returning e.value() (enabled via requires (!std::is_void_v<edge_value_type>);` do not generate any other edge_value overloads).
   - `auto size() const noexcept -> std::size_t` (returns `vertices_.size()`)
   - `auto operator[](vertex_id_type uid) -> vertex_type&` and `const` overload.
 
