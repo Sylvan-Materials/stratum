@@ -84,7 +84,15 @@ jobs:
             printf '\n---\n\n' >> scratchpad/spec_preamble.md
           fi
 
+      - name: "[TEMP CACHE] Restore Pass 1 (graph.hpp)"
+        id: cache-pass1
+        uses: actions/cache/restore@v4
+        with:
+          path: scratchpad/include/graph/graph.hpp
+          key: temp-pass1-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md') }}
+
       - name: Pass 1 - Synthesize & Syntax-Check Core Graph (graph/graph.hpp)
+        if: steps.cache-pass1.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -o pipefail
@@ -108,6 +116,13 @@ jobs:
           clang++ -std=c++2c -fsyntax-only -Wall -Wextra -pedantic \
             -Iscratchpad/include \
             scratchpad/include/graph/graph.hpp 2>&1 | tee -a scratchpad/validation.log
+
+      - name: "[TEMP CACHE] Save Pass 1 (graph.hpp)"
+        if: steps.cache-pass1.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: scratchpad/include/graph/graph.hpp
+          key: temp-pass1-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md') }}
 
       - name: Pass 2 - Synthesize & Syntax-Check Dynamic Adjacency Graph
         shell: bash

@@ -34,14 +34,13 @@ Inside `vov_graph_traits`, expose these exact public type aliases:
 - `static constexpr bool is_undirected = Undirected;`
 
 ### 2. Internal Edge & Vertex Descriptor Types
-Define these two struct templates at namespace scope immediately after `vov_graph_traits` (above `dynamic_adjacency_graph`):
+Define these two struct templates at namespace scope immediately after `vov_graph_traits` (above `dynamic_adjacency_graph`). Always suffix data member names with a trailing underscore (`_`) so they never collide with accessor member function names:
 - **`template <typename VId, typename EV = void> struct dynamic_edge`:**
-  - Primary template stores `VId source_id{}; VId target_id{}; EV value{};` and provides member accessors `source_id()`, `target_id()`, and `value()`.
-  - Partial specialization `template <typename VId> struct dynamic_edge<VId, void>` stores only `VId source_id{}; VId target_id{};` and provides `source_id()` and `target_id()`.
+  - Primary template stores `VId source_id_{}; VId target_id_{}; EV value_{};` and provides member accessors `source_id()`, `target_id()`, and mutable/`const` `value()`.
+  - Partial specialization `template <typename VId> struct dynamic_edge<VId, void>` stores only `VId source_id_{}; VId target_id_{};` and provides `source_id()` and `target_id()`.
 - **`template <typename VId, typename VV = void, typename EV = void> struct dynamic_vertex`:**
-  - Primary template stores `VId id{}; VV value{}; std::vector<dynamic_edge<VId, EV>> edges{};` and provides member accessors `id()`, `value()`, and `edges()`.
-  - Partial specialization `template <typename VId, typename EV> struct dynamic_vertex<VId, void, EV>` stores only `VId id{}; std::vector<dynamic_edge<VId, EV>> edges{};` and provides `id()` and `edges()`.
-
+  - Primary template stores `VId id_{}; VV value_{}; std::vector<dynamic_edge<VId, EV>> edges_{};` and provides member accessors `id()`, mutable/`const` `value()`, and mutable/`const` `edges()`.
+  - Partial specialization `template <typename VId, typename EV> struct dynamic_vertex<VId, void, EV>` stores only `VId id_{}; std::vector<dynamic_edge<VId, EV>> edges_{};` and provides `id()` and mutable/`const` `edges()`.
 
 ### 3. `dynamic_adjacency_graph` Class Template
 Define:
@@ -62,16 +61,18 @@ Inside `dynamic_adjacency_graph`, implement these exact public types, storage, a
   - `std::vector<vertex_type> vertices_{};` indexed directly by `vertex_id_type` (`0` through `N - 1`), automatically resizing if an inserted vertex ID or edge endpoint exceeds `vertices_.size()`.
 - **Capacity & Bulk Ingestion Methods (Matching `amet/test/src/test.cpp`):**
   1. `auto reserve_vertices(std::size_t count) -> void` — reserves capacity on `vertices_`.
-  2. `auto reserve_edges(std::size_t count) -> void` — no-op or per-bucket hint (compiles cleanly).
+  2. auto reserve_edges([[maybe_unused]] std::size_t count) -> void — no-op (use [[maybe_unused]] to satisfy -Wall -Wextra). When indexing vertices_ by a std::size_t vertex ID (std::size_t idx = static_cast<std::size_t>(id);), assign vertices_[idx].id_ = id; (always store the index in an explicit std::size_t idx variable before indexing vertices_[idx] so bracket expressions never nest).
   3. **`load_vertices(VRng&& vrng, VProj vproj = {}) -> void`:**
      - Iterates over every element `elem` in `vrng` and invokes `auto projected = std::invoke(vproj, elem);`.
      - Must accept **both** `graph::copyable_vertex_t<VId, VV>` (which has `.id` and `.value` members) **and** tuple-like / pair-like projected results (such as `std::make_pair(v.id, v.value)` or `std::tuple<VId, VV>` via `std::tuple_size` / `std::get<0>` and `std::get<1>`), as well as bare `VId` values when `VV` is `void`.
      - Resizes `vertices_` as needed so `vertices_[id]` exists and assigns `vertices_[id].id = id` and `vertices_[id].value = value` (when `!std::is_void_v<VV>`).
-  4. **`load_edges(ERng&& erng, EProj eproj = {}) -> void`:**
+  4. **`load_edges(ERng&& erng, EProj eproj = {}) -> void`:** 
      - Iterates over every element `elem` in `erng` and invokes `auto projected = std::invoke(eproj, elem);`.
      - Must accept **both** `graph::copyable_edge_t<VId, EV>` **and** any structural edge record possessing `.source_id`, `.target_id`, and optional `.value` members (such as `amet`'s `abstract_edge_record`), as well as 2-element or 3-element tuple-like records (`std::get<0>`, `std::get<1>`, `std::get<2>`).
      - Ensures `vertices_` is sized to hold `std::max(src, dst) + 1`, populates `vertices_[src].id = src` and `vertices_[dst].id = dst`, and pushes the edge onto `vertices_[src].edges`.
      - **Important Note on Directedness:** In `amet`, callers already push both `(u, v)` and `(v, u)` explicitly when building undirected graphs even when `Undirected == true`; therefore, `load_edges` inserts the projected edge strictly as given (`src -> dst`) without duplicating edges a second time.
+  5. **When indexing vertices_** by a std::size_t vertex ID (std::size_t idx = static_cast<std::size_t>(id);), 
+     assign vertices_[idx].id_ = id; (always store the index in an explicit std::size_t idx variable before indexing vertices_[idx] so bracket expressions never nest)
 - **CPO Customization Hooks (Member Functions Inside `dynamic_adjacency_graph`):**
   - `auto vertices() -> std::vector<vertex_type>&` and `auto vertices() const -> const std::vector<vertex_type>&`
   - `auto edges(const vertex_type& u) -> std::vector<edge_type>&` and `auto edges(const vertex_type& u) const -> const std::vector<edge_type>&`
