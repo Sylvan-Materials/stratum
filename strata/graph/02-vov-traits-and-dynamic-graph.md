@@ -7,6 +7,7 @@ You are the Stratum Automation Code Generator. Translate this specification into
 - **Explicit Types & Trailing Returns:** Declare concrete variable types explicitly inside function bodies. Reserve `auto` strictly for trailing return placeholders (`-> decltype(auto)` or `-> void`) and concept-constrained return types. Never write `const auto` before a function name, and never place `auto` inside template argument lists or `requires(...)` parameter lists.
 - **Class Template Constraint Placement:** When constraining a class template, place the concept directly inside `template <...>` brackets or in a `requires` clause *before* the `class` keyword—never between the class name and its opening brace `{`. Terminate every `struct` and `class` definition with `;`.
 - **Safe Reference Fallbacks:** Never return `{}` from a function returning a `const` reference; use a local `static const` empty container instance or bounds-checked storage.
+- **Bare auto for Trailing Returns:** Always write bare, unqualified auto on the left side of any function with a -> trailing return type (never auto& or const auto).
 
 ## 2. Target Component Archetype (`namespace graph::container`)
 - **Archetype:** Standard Adjacency List container (`dynamic_adjacency_graph`) parameterized by `vov_graph_traits`, matching `stdgraph/P1709` and `amet`'s exact container interface.
@@ -48,6 +49,7 @@ Define:
 template <typename Traits = vov_graph_traits<>>
 class dynamic_adjacency_graph;
 ```
+Inside dynamic_adjacency_graph, always refer to the vertex ID type via the class's public alias vertex_id_type (never VId).
 Inside `dynamic_adjacency_graph`, implement these exact public types, storage, and member functions:
 - **Public Type Aliases:**
   - `using traits_type = Traits;`
@@ -83,7 +85,10 @@ Inside `dynamic_adjacency_graph`, implement these exact public types, storage, a
   - `auto vertex_value(vertex_type& u) -> vertex_value_type&` and `const` overload (enabled via `requires (!std::is_void_v<vertex_value_type>)`)
   - `auto edge_value(edge_type& e) -> edge_value_type&` and `const` overload (enabled via `requires (!std::is_void_v<edge_value_type>)`)
   - `auto size() const noexcept -> std::size_t` (returns `vertices_.size()`)
-  - `auto operator[](vertex_id_type uid) -> vertex_type&` and `const` overload
+  - `auto operator[](vertex_id_type uid) -> vertex_type&` and `const` overload.
+  6. **Detect projected record shapes using structural if constexpr (requires { ... }) checks rather than std::is_same_v<..., graph::copyable_edge_t<...>>:**
+	 - In load_vertices: check if constexpr (requires { projected.id; }) first, then else if constexpr (requires { std::get<0>(projected); }), then else (for bare vertex_id_type).
+	 - In load_edges: check if constexpr (requires { projected.source_id; projected.target_id; }) first (checking requires { projected.value; } inside for non-void edge values), then else if constexpr (requires { std::get<0>(projected); std::get<1>(projected); }).
 
 ## 4. Output Instruction
 Emit ONLY a single ```cpp code block containing the complete, self-contained C++26 header enclosed within header guard defines (`#ifndef STRATUM_GRAPH_DYNAMIC_ADJACENCY_GRAPH_HPP` / `#define STRATUM_GRAPH_DYNAMIC_ADJACENCY_GRAPH_HPP` / `#endif`). Do not include conversational remarks before or after the block.
