@@ -95,11 +95,11 @@ jobs:
             -f scratchpad/prompt_pass1.md \
             -st --temp 0.0 --seed 42 --log-disable --no-display-prompt \
             --repeat-penalty 1.15 \
-            -n 1200 \
+            -n 6144 \
             -t $(nproc) -c $CTX_PASS1 \
             > scratchpad/raw_pass1.txt
 
-          awk '/^```cpp/{flag=1; next} /^```/{flag=0} flag' scratchpad/raw_pass1.txt > scratchpad/include/graph/graph.hpp
+          awk '/^```cpp/{flag=1; next} /^```|^\[ Prompt:/{flag=0} flag' scratchpad/raw_pass1.txt > scratchpad/include/graph/graph.hpp
           if [ ! -s scratchpad/include/graph/graph.hpp ]; then
             cp scratchpad/raw_pass1.txt scratchpad/include/graph/graph.hpp
           fi
@@ -123,11 +123,11 @@ jobs:
             -f scratchpad/prompt_pass2.md \
             -st --temp 0.0 --seed 42 --log-disable --no-display-prompt \
             --repeat-penalty 1.15 \
-            -n 1200 \
+            -n 6144 \
             -t $(nproc) -c $CTX_PASS2 \
             > scratchpad/raw_pass2.txt
 
-          awk '/^```cpp/{flag=1; next} /^```/{flag=0} flag' scratchpad/raw_pass2.txt > scratchpad/include/graph/container/dynamic_adjacency_graph.hpp
+          awk '/^```cpp/{flag=1; next} /^```|^\[ Prompt:/{flag=0} flag' scratchpad/raw_pass2.txt > scratchpad/include/graph/container/dynamic_adjacency_graph.hpp
           if [ ! -s scratchpad/include/graph/container/dynamic_adjacency_graph.hpp ]; then
             cp scratchpad/raw_pass2.txt scratchpad/include/graph/container/dynamic_adjacency_graph.hpp
           fi
@@ -161,11 +161,11 @@ jobs:
             -f scratchpad/prompt_pass3.md \
             -st --temp 0.0 --seed 42 --log-disable --no-display-prompt \
             --repeat-penalty 1.15 \
-            -n 1200 \
+            -n 6144 \
             -t $(nproc) -c $CTX_PASS3 \
             > scratchpad/raw_pass3.txt
 
-          awk '/^```cpp/{flag=1; next} /^```/{flag=0} flag' scratchpad/raw_pass3.txt > scratchpad/include/graph/views/graph_views.hpp
+          awk '/^```cpp/{flag=1; next} /^```|^\[ Prompt:/{flag=0} flag' scratchpad/raw_pass3.txt > scratchpad/include/graph/views/graph_views.hpp
           if [ ! -s scratchpad/include/graph/views/graph_views.hpp ]; then
             cp scratchpad/raw_pass3.txt scratchpad/include/graph/views/graph_views.hpp
           fi
