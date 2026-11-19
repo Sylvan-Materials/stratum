@@ -128,11 +128,12 @@ jobs:
         id: cache-pass2
         uses: actions/cache/restore@v4
         with:
-          path: 
+          path: |
             scratchpad/include/graph/container/dynamic_adjacency_graph.hpp
             scratchpad/include/graph/container/traits/vov_graph_traits.hpp
-          key: temp-pass2-${{ hashFiles('strata/specs/*.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md') }}
+          key: temp-pass2-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md') }}
       - name: Pass 2 - Synthesize & Syntax-Check Dynamic Adjacency Graph
+        if: steps.cache-pass2.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -o pipefail
@@ -172,10 +173,10 @@ jobs:
         if: steps.cache-pass2.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: 
+          path: |
             scratchpad/include/graph/container/dynamic_adjacency_graph.hpp
             scratchpad/include/graph/container/traits/vov_graph_traits.hpp
-          key: temp-pass2-${{ hashFiles('strata/specs/*.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md') }}
+          key: temp-pass2-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md') }}
 
       - name: Pass 3 - Synthesize & Syntax-Check Views & Filtered Adaptors
         shell: bash
