@@ -34,9 +34,14 @@ Inside `vov_graph_traits`, expose these exact public type aliases:
 - `static constexpr bool is_undirected = Undirected;`
 
 ### 2. Internal Edge & Vertex Descriptor Types
-Define clean lightweight value descriptors (or nested structs inside `dynamic_adjacency_graph`):
-- **`dynamic_edge`:** Stores `VId source_id{}; VId target_id{};` plus `EV value{};` (use a partial specialization when `std::is_void_v<EV>` so zero extra memory is allocated for `void` edge values). Provide member accessors `source_id()`, `target_id()`, and `value()` (when `!std::is_void_v<EV>`).
-- **`dynamic_vertex`:** Stores `VId id{}; std::vector<dynamic_edge> edges{};` plus `VV value{};` (use a partial specialization when `std::is_void_v<VV>` so zero extra memory is allocated for `void` vertex values). Provide member accessors `id()`, `edges()`, and `value()` (when `!std::is_void_v<VV>`).
+Define these two struct templates at namespace scope immediately after `vov_graph_traits` (above `dynamic_adjacency_graph`):
+- **`template <typename VId, typename EV = void> struct dynamic_edge`:**
+  - Primary template stores `VId source_id{}; VId target_id{}; EV value{};` and provides member accessors `source_id()`, `target_id()`, and `value()`.
+  - Partial specialization `template <typename VId> struct dynamic_edge<VId, void>` stores only `VId source_id{}; VId target_id{};` and provides `source_id()` and `target_id()`.
+- **`template <typename VId, typename VV = void, typename EV = void> struct dynamic_vertex`:**
+  - Primary template stores `VId id{}; VV value{}; std::vector<dynamic_edge<VId, EV>> edges{};` and provides member accessors `id()`, `value()`, and `edges()`.
+  - Partial specialization `template <typename VId, typename EV> struct dynamic_vertex<VId, void, EV>` stores only `VId id{}; std::vector<dynamic_edge<VId, EV>> edges{};` and provides `id()` and `edges()`.
+
 
 ### 3. `dynamic_adjacency_graph` Class Template
 Define:
