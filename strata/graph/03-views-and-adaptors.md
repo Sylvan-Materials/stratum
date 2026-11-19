@@ -15,15 +15,16 @@ You are the Stratum Automation Code Generator. Translate this specification into
 
 ### Part A: View Descriptor Types inside `namespace graph`
 1. **`vertex_info<VId, V>`:**
-   - Stores `VId id{}; V vertex{};` (with a `void` partial specialization when `V` is `void` storing only `VId id{};`).
-   - Supports structured bindings: `get<0>()` returns `id`, `get<1>()` returns `vertex`.
+   - Primary template stores `VId id{}; V vertex{};` with `template <std::size_t I> constexpr auto get() const -> decltype(auto)` returning `id` for `I == 0` and `vertex` for `I == 1`.
+   - Partial specialization `template <typename VId> struct vertex_info<VId, void>` stores `VId id{};` (`VId` is always a valid ID type, never `void` or `std::void_t`) with `template <std::size_t I> constexpr auto get() const -> decltype(auto)` returning `id` for `I == 0`.
 2. **`neighbor_info<VId, E>`:**
-   - Stores `VId target_id{}; E edge{};` (with a `void` partial specialization when `E` is `void` storing only `VId target_id{};`).
-   - Supports structured bindings: `get<0>()` returns `target_id`, `get<1>()` returns `edge`.
+   - Primary template stores `VId target_id{}; E edge{};` with `get<0>()` returning `target_id` and `get<1>()` returning `edge`.
+   - Partial specialization `template <typename VId> struct neighbor_info<VId, void>` stores `VId target_id{};` with `get<0>()` returning `target_id`.
 3. **`edge_info<VId, E>`:**
-   - Stores `VId source_id{}; VId target_id{}; E edge{};` (with a `void` partial specialization when `E` is `void` storing `VId source_id{}; VId target_id{};`).
-   - Supports structured bindings: `get<0>()` returns `source_id`, `get<1>()` returns `target_id`, `get<2>()` returns `edge`.
-4. **Specialize `std::tuple_size` and `std::tuple_element` in `namespace std`** immediately after declaring `vertex_info`, `neighbor_info`, and `edge_info`.
+   - Primary template stores `VId source_id{}; VId target_id{}; E edge{};` with `get<0>()` returning `source_id`, `get<1>()` returning `target_id`, and `get<2>()` returning `edge`.
+   - Partial specialization `template <typename VId> struct edge_info<VId, void>` stores `VId source_id{}; VId target_id{};` with `get<0>()` returning `source_id` and `get<1>()` returning `target_id`.
+4. **Close `namespace graph` Before `namespace std` Specializations:**
+   - You MUST close `namespace graph` (`} // namespace graph`) **before** opening `namespace std {` to specialize `std::tuple_size` and `std::tuple_element` for `graph::vertex_info`, `graph::neighbor_info`, and `graph::edge_info` (both primary templates and `<VId, void>` partial specializations). Inside `tuple_element`, use `.template get<I>()` with the `template` disambiguator. Close `namespace std` (`} // namespace std`) before opening `namespace graph::views`.
 
 ### Part B: Range Views inside `namespace graph::views`
 1. **`vertexlist(G&& g)`:**
