@@ -27,11 +27,15 @@ Open `namespace graph {` and declare these three struct templates directly at na
 4. **Close `namespace graph` (`} // namespace graph`)** immediately after `edge_info<VId, void>;`.
 
 ### Part B: Structured Binding Traits inside `namespace std`
-Open `namespace std {` at global scope (outside `namespace graph`) and specialize `tuple_size` and `tuple_element` for:
-- `graph::vertex_info<VId, V>` (size 2) and `graph::vertex_info<VId, void>` (size 1)
-- `graph::neighbor_info<VId, E>` (size 2) and `graph::neighbor_info<VId, void>` (size 1)
-- `graph::edge_info<VId, E>` (size 3) and `graph::edge_info<VId, void>` (size 2)
-Inside every `tuple_element` specialization, use `.template get<I>()` with the `.template` keyword. Close `namespace std` (`} // namespace std`) immediately after.
+First emit `} // namespace graph` on its own line to close `namespace graph` completely. Then open `namespace std {` at global scope and define partial specializations (always using `template <typename VId, ...>` or `template <typename VId>`, never empty `template <>`) for `tuple_size` and `tuple_element`:
+- `template <typename VId, typename V> struct tuple_size<graph::vertex_info<VId, V>> : integral_constant<size_t, 2> {};`
+- `template <typename VId> struct tuple_size<graph::vertex_info<VId, void>> : integral_constant<size_t, 1> {};`
+- `template <typename VId, typename E> struct tuple_size<graph::neighbor_info<VId, E>> : integral_constant<size_t, 2> {};`
+- `template <typename VId> struct tuple_size<graph::neighbor_info<VId, void>> : integral_constant<size_t, 1> {};`
+- `template <typename VId, typename E> struct tuple_size<graph::edge_info<VId, E>> : integral_constant<size_t, 3> {};`
+- `template <typename VId> struct tuple_size<graph::edge_info<VId, void>> : integral_constant<size_t, 2> {};`
+- Corresponding `template <size_t I, ...> struct tuple_element<I, ...>` partial specializations using `using type = decltype(declval<...>().template get<I>());`.
+Close `namespace std` (`} // namespace std`) immediately after.
 
 ### Part C: Range Views inside `namespace graph::views`
 Open `namespace graph::views {` and define:
