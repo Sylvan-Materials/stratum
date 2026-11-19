@@ -23,8 +23,7 @@ You are the Stratum Automation Code Generator. Translate this specification into
 3. **`edge_info<VId, E>`:**
    - Primary template stores `VId source_id{}; VId target_id{}; E edge{};` with `get<0>()` returning `source_id`, `get<1>()` returning `target_id`, and `get<2>()` returning `edge`.
    - Partial specialization `template <typename VId> struct edge_info<VId, void>` stores `VId source_id{}; VId target_id{};` with `get<0>()` returning `source_id` and `get<1>()` returning `target_id`.
-4. **Close `namespace graph` Before `namespace std` Specializations:**
-   - You MUST close `namespace graph` (`} // namespace graph`) **before** opening `namespace std {` to specialize `std::tuple_size` and `std::tuple_element` for `graph::vertex_info`, `graph::neighbor_info`, and `graph::edge_info` (both primary templates and `<VId, void>` partial specializations). Inside `tuple_element`, use `.template get<I>()` with the `template` disambiguator. Close `namespace std` (`} // namespace std`) before opening `namespace graph::views`.
+4. **MANDATORY NAMESPACE CLOSING BRACE:** Immediately after `edge_info`, emit a standalone closing brace `} // namespace graph` at column 0 to exit `namespace graph` completely **before** writing `namespace std {`. Inside `namespace std`, specialize `tuple_size` and `tuple_element` for `graph::vertex_info`, `graph::neighbor_info`, and `graph::edge_info` using `.template get<I>()` (with the `.template` keyword before `get<I>()`). Then emit `} // namespace std` before opening `namespace graph::views {`.
 
 ### Part B: Range Views inside `namespace graph::views`
 1. **`vertexlist(G&& g)`:**
