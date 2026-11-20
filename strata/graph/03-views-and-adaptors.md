@@ -51,7 +51,7 @@ Open `namespace graph::views {` and define these range views using `std::views::
 5. **`template <typename G, typename U> auto neighbors(G&& g, const U& u) -> decltype(auto)`:**
    - Returns `graph::edges(g, u) | std::views::transform([&g](const auto& e) { return graph::target_id(g, e); })`.
 6. **`template <typename G> auto edgelist(G&& g) -> decltype(auto)`:**
-   - Flattens `graph::vertices(g)` and `graph::edges(g, u)` via `std::views::transform` and `std::views::join` to yield `graph::edge_info{graph::vertex_id(g, u), graph::target_id(g, e), e}` across every vertex and outgoing edge.
+   - Never pass arguments to `std::views::join`. First pipe `graph::vertices(g)` into `std::views::transform([&g](const auto& u) { return graph::edges(g, u) | std::views::transform([&g, &u](const auto& e) { return graph::edge_info{graph::vertex_id(g, u), graph::target_id(g, e), e}; }); })`, and then pipe that result into `| std::views::join`.
 Close `namespace graph::views` (`} // namespace graph::views`).
 
 
