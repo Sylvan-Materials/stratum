@@ -39,14 +39,21 @@ Close `namespace std` (`} // namespace std`) immediately after.
 - Inside every tuple_element specialization, write .template get<I>() with the .template keyword before get (never .get<I>() without .template).
 
 ### Part C: Range Views inside `namespace graph::views`
-Open `namespace graph::views {` and define:
-1. **`vertexlist(G&& g)`** and **`vertexlist(G&& g, VVF&& vvf)`:** Yields `graph::vertex_info` elements across `graph::vertices(g)`.
-2. **`incidence(G&& g, const U& u)`** and **`incidence(G&& g, graph::vertex_id_t<G> uid)`:** Yields `graph::neighbor_info` elements across `graph::edges(g, u)`.
-3. **`neighbors(G&& g, const U& u)`:** Yields target vertices or target IDs adjacent to `u` across `graph::edges(g, u)`.
-4. **`edgelist(G&& g)`:** Yields `graph::edge_info` elements `{source_id, target_id, uv}` across all vertices and incident edges in `g`.
+Open `namespace graph::views {` and define these range views using `std::views::transform` (never `std::transform_view`, and never reference nonexistent traits like `graph::vertex_value_t` or `graph::edge_value_t`—use CTAD `graph::vertex_info{...}`, `graph::neighbor_info{...}`, and `graph::edge_info{...}` or `graph::vertex_t<G>` / `graph::edge_t<G>`):
+1. **`template <typename G> auto vertexlist(G&& g) -> decltype(auto)`:**
+   - Returns `graph::vertices(g) | std::views::transform([&g](const auto& u) { return graph::vertex_info{graph::vertex_id(g, u), u}; })`.
+2. **`template <typename G, typename VVF> auto vertexlist(G&& g, VVF&& vvf) -> decltype(auto)`:**
+   - Explicitly declare `template <typename G, typename VVF>` above the signature. Returns `graph::vertices(g) | std::views::transform([&g, vvf = std::forward<VVF>(vvf)](const auto& u) { return graph::vertex_info{graph::vertex_id(g, u), std::invoke(vvf, g, u)}; })`.
+3. **`template <typename G, typename U> auto incidence(G&& g, const U& u) -> decltype(auto)`:**
+   - Returns `graph::edges(g, u) | std::views::transform([&g](const auto& e) { return graph::neighbor_info{graph::target_id(g, e), e}; })`.
+4. **`template <typename G> auto incidence(G&& g, graph::vertex_id_t<G> uid) -> decltype(auto)`:**
+   - Returns `graph::edges(g, uid) | std::views::transform([&g](const auto& e) { return graph::neighbor_info{graph::target_id(g, e), e}; })`.
+5. **`template <typename G, typename U> auto neighbors(G&& g, const U& u) -> decltype(auto)`:**
+   - Returns `graph::edges(g, u) | std::views::transform([&g](const auto& e) { return graph::target_id(g, e); })`.
+6. **`template <typename G> auto edgelist(G&& g) -> decltype(auto)`:**
+   - Flattens `graph::vertices(g)` and `graph::edges(g, u)` via `std::views::transform` and `std::views::join` to yield `graph::edge_info{graph::vertex_id(g, u), graph::target_id(g, e), e}` across every vertex and outgoing edge.
 Close `namespace graph::views` (`} // namespace graph::views`).
-5. **Explicitly state template <typename G, typename VVF>** for vertexlist(G&& g, VVF&& vvf) so VVF is declared in the template parameter list.
-6. **Explicitly instruct the generator to use** std::views::transform(...) (or std::ranges::transform_view), never std::transform_view (which does not exist in namespace std).
+
 
 ### Part D: Branch-Pruning Adaptor inside `namespace graph` & `namespace graph::adaptors`
 Open `namespace graph {` and define:
