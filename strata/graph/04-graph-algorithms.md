@@ -3,7 +3,7 @@
 You are the Stratum Automation Code Generator. Translate this specification into a single, production-grade, header-only C++26 component (`graph/algorithm/graph_algorithms.hpp`) adhering strictly to Stratum's design rules.
 
 ## 1. Explicit Syntactic Constraints (Mandatory)
-- **Standard Headers & Core Includes:** Include `"graph/graph.hpp"`, `"graph/views/graph_views.hpp"`, `<algorithm>`, `<concepts>`, `<cstddef>`, `<cstdint>`, `<functional>`, `<limits>`, `<queue>`, `<ranges>`, `<stack>`, `<type_traits>`, `<utility>`, and `<vector>` explicitly at the top of the file.
+- **Standard Headers & Core Includes:** Include `"graph/graph.hpp"`, `<algorithm>`, `<concepts>`, `<cstddef>`, `<cstdint>`, `<functional>`, `<limits>`, `<queue>`, `<ranges>`, `<stack>`, `<type_traits>`, `<utility>`, and `<vector>` explicitly at the top of the file.
 - **Explicit Types & Trailing Returns:** Declare concrete variable types explicitly inside function bodies. Reserve `auto` strictly for trailing return placeholders (`-> void` or `-> decltype(auto)`) and concept-constrained return types. Never write `const auto` before a function name, and never place `auto` inside template argument lists or `requires(...)` parameter lists.
 - **CPO-Generic Operation:** Never hardcode `dynamic_adjacency_graph` inside algorithm bodies; access vertices, edges, and IDs strictly through `graph::vertices(g)`, `graph::edges(g, u)`, `graph::vertex_id(g, u)`, `graph::target_id(g, e)`, and `std::ranges::size(graph::vertices(g))` so algorithms work across all seven Stratum container archetypes.
 - **Vertex Count Lookup:** Never call graph::size(g) or graph::num_vertices(g) (neither exists in graph/graph.hpp). Always compute the vertex count via const std::size_t num_verts = static_cast<std::size_t>(std::ranges::distance(graph::vertices(g)));.
@@ -52,6 +52,7 @@ Implement a zero-recursion, stack-allocated iterative DFS traversal inside `name
 - **Signature:**
   - `template <typename G, typename Visitor> auto depth_first_search(G&& g, graph::vertex_id_t<G> start, Visitor&& vis) -> void` (plus an all-components overload `depth_first_search(G&& g, Visitor&& vis) -> void` that sweeps unvisited vertices `0 .. N-1`).
   - Uses explicit `std::vector<std::uint8_t> state` (`0 = unvisited`, `1 = visiting`, `2 = visited`) and an explicit `std::vector` stack to prevent stack overflow on deep AST/parse graphs in `antlr4-thresher` and `json-thresher`.
+- **Stop Immediately After depth_first_search:** Immediately after closing namespace graph::algorithm following depth_first_search, emit #endif and close the ``` code fence. Do not re-emit vertex_info, neighbor_info, edge_info, std::tuple_size, or any view definitions.
 
 ## 4. Output Instruction
 Emit ONLY a single ```cpp code block containing the complete, self-contained C++26 header enclosed within header guard defines (`#ifndef STRATUM_GRAPH_ALGORITHMS_HPP` / `#define STRATUM_GRAPH_ALGORITHMS_HPP` / `#endif`). Do not include conversational remarks before or after the block.
