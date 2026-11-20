@@ -116,12 +116,18 @@ jobs:
           clang++ -std=c++2c -fsyntax-only -Wall -Wextra -pedantic \
             -Iscratchpad/include \
             scratchpad/include/graph/graph.hpp 2>&1 | tee -a scratchpad/validation.log
+          cat << 'EOF' > scratchpad/include/graph/graph_concepts.hpp
+          #pragma once
+          #include "graph/graph.hpp"
+          EOF
 
       - name: "[TEMP CACHE] Save Pass 1 (graph.hpp)"
         if: steps.cache-pass1.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: scratchpad/include/graph/graph.hpp
+          path: |
+           scratchpad/include/graph/graph.hpp
+           scratchpad/include/graph/graph_concepts.hpp
           key: temp-pass1-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md') }}
 
       - name: "[TEMP CACHE] Restore Pass 2 (dynamic_adjacency_graph.hpp"
@@ -132,7 +138,7 @@ jobs:
             scratchpad/include/graph/container/dynamic_adjacency_graph.hpp
             scratchpad/include/graph/container/traits/vov_graph_traits.hpp
             scratchpad/include/graph/container/dynamic_graph.hpp
-          key: temp-pass2-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md') }}
+          key: temp-pass2-v2-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md') }}
       - name: Pass 2 - Synthesize & Syntax-Check Dynamic Adjacency Graph
         if: steps.cache-pass2.outputs.cache-hit != 'true'
         shell: bash
@@ -161,7 +167,6 @@ jobs:
           cat << 'EOF' > scratchpad/include/graph/container/traits/vov_graph_traits.hpp
           #pragma once
           #include "graph/container/dynamic_adjacency_graph.hpp"
-          #endif
           EOF
 
           cat << 'EOF' > scratchpad/include/graph/container/dynamic_graph.hpp
@@ -182,9 +187,10 @@ jobs:
           path: |
             scratchpad/include/graph/container/dynamic_adjacency_graph.hpp
             scratchpad/include/graph/container/traits/vov_graph_traits.hpp
-          key: temp-pass2-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md') }}
+            scratchpad/include/graph/container/dynamic_graph.hpp
+          key: temp-pass2-v2-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md') }}
 
-      - name: "[TEMP CACHE] Restore Pass 3 (dynamic_adjacency_graph.hpp"
+      - name: "[TEMP CACHE] Restore Pass 3 (graph_views.hpp"
         id: cache-pass3
         uses: actions/cache/restore@v4
         with:
