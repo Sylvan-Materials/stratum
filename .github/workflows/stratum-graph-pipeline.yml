@@ -131,6 +131,7 @@ jobs:
           path: |
             scratchpad/include/graph/container/dynamic_adjacency_graph.hpp
             scratchpad/include/graph/container/traits/vov_graph_traits.hpp
+            scratchpad/include/graph/container/dynamic_graph.hpp
           key: temp-pass2-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md') }}
       - name: Pass 2 - Synthesize & Syntax-Check Dynamic Adjacency Graph
         if: steps.cache-pass2.outputs.cache-hit != 'true'
@@ -158,15 +159,20 @@ jobs:
 
           # Emit forwarding header for vov_graph_traits.hpp
           cat << 'EOF' > scratchpad/include/graph/container/traits/vov_graph_traits.hpp
-          #ifndef STRATUM_GRAPH_VOV_GRAPH_TRAITS_HPP
-          #define STRATUM_GRAPH_VOV_GRAPH_TRAITS_HPP
+          #pragma once
           #include "graph/container/dynamic_adjacency_graph.hpp"
           #endif
+          EOF
+
+          cat << 'EOF' > scratchpad/include/graph/container/dynamic_graph.hpp
+          #pragma once
+          #include "graph/container/dynamic_adjacency_graph.hpp"
           EOF
 
           echo -e "\n=== PASS 2: CLANG SYNTAX CHECK (dynamic_adjacency_graph.hpp) ===" >> scratchpad/validation.log
           clang++ -std=c++2c -fsyntax-only -Wall -Wextra -pedantic \
             -Iscratchpad/include \
+            scratchpad/include/graph/container/dynamic_graph.hpp \
             scratchpad/include/graph/container/dynamic_adjacency_graph.hpp 2>&1 | tee -a scratchpad/validation.log
 
       - name: "[TEMP CACHE] Save Pass 2 (dynamic_adjacency_graph.hpp)"
@@ -178,6 +184,14 @@ jobs:
             scratchpad/include/graph/container/traits/vov_graph_traits.hpp
           key: temp-pass2-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md') }}
 
+      - name: "[TEMP CACHE] Restore Pass 3 (dynamic_adjacency_graph.hpp"
+        id: cache-pass3
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            scratchpad/include/graph/views/
+            scratchpad/include/graph/adaptors/
+          key: temp-pass3-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md', 'strata/graph/03-views-and-adaptors.md') }}
       - name: Pass 3 - Synthesize & Syntax-Check Views & Filtered Adaptors
         shell: bash
         run: |
@@ -215,6 +229,15 @@ jobs:
           clang++ -std=c++2c -fsyntax-only -Wall -Wextra -pedantic \
             -Iscratchpad/include \
             scratchpad/include/graph/views/graph_views.hpp 2>&1 | tee -a scratchpad/validation.log
+
+      - name: "[TEMP CACHE] Save Pass 3 (graph_views.hpp)"
+        if: steps.cache-pass3.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            scratchpad/include/graph/views/
+            scratchpad/include/graph/adaptors/
+          key: temp-pass3-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md', 'strata/graph/03-views-and-adaptors.md') }}
 
       - name: Pass 4 - Clone Amet & Execute Real-World Doctest Suite
         shell: bash
