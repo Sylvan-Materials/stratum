@@ -37,6 +37,8 @@ You are the Stratum Automation Code Generator. Translate this specification into
    - **`vertex_value` (`vertex_value_fn`):** Takes `(G&& g, const U& u)`. Checks `tag_invoke(std::declval<vertex_value_fn>(), std::forward<G>(g), u)` or `std::forward<G>(g).vertex_value(u)`.
    - **`edge_value` (`edge_value_fn`):** Takes `(G&& g, const E& e)`. Checks `tag_invoke(std::declval<edge_value_fn>(), std::forward<G>(g), e)` or `std::forward<G>(g).edge_value(e)`.
    - **1degree (degree_fn):** Takes (G&& g, const U& u). Overload A checks tag_invoke(std::declval<degree_fn>(), std::forward<G>(g), u); Overload B checks std::forward<G>(g).degree(u); Overload C checks requires(G&& g, const U& u) { graph::edges(std::forward<G>(g), u); } and returns static_cast<std::size_t>(std::ranges::distance(graph::edges(std::forward<G>(g), u))).
+   - **num_vertices (num_vertices_fn):** Takes (G&& g). Overload A checks tag_invoke(std::declval<num_vertices_fn>(), std::forward<G>(g)); Overload B checks std::forward<G>(g).num_vertices(); Overload C checks requires(G&& g) { graph::vertices(std::forward<G>(g)); } and returns static_cast<std::size_t>(std::ranges::distance(graph::vertices(std::forward<G>(g)))).
+   - **`num_edges` (`num_edges_fn`):** Takes `(G&& g)`. Overload A checks `tag_invoke(std::declval<num_edges_fn>(), std::forward<G>(g))`; Overload B checks `std::forward<G>(g).num_edges()`; Overload C checks `requires(G&& g) { graph::vertices(std::forward<G>(g)); }` and sums `static_cast<std::size_t>(std::ranges::distance(graph::edges(std::forward<G>(g), u)))` across every vertex `u` in `graph::vertices(std::forward<G>(g))`.
 
 
 3. **Graph Associated Type Traits:**

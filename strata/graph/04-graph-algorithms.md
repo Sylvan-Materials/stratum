@@ -14,6 +14,20 @@ You are the Stratum Automation Code Generator. Translate this specification into
 
 ## 3. Exact Top-to-Bottom Declaration Sequence inside `namespace graph` (Mandatory)
 
+### 0. `container_value_fn` Property-Map Adaptor
+Define `container_value_fn` directly inside `namespace graph` above `dijkstra_shortest_paths`:
+```cpp
+template <typename Container>
+struct container_value_fn {
+    Container* container_{nullptr};
+    explicit constexpr container_value_fn(Container& c) noexcept : container_(&c) {}
+    template <typename G, typename VId>
+    constexpr auto operator()(const G&, const VId& uid) const -> decltype(auto) {
+        return (*container_)[static_cast<std::size_t>(uid)];
+    }
+};
+```
+
 ### 1. `dijkstra_shortest_paths` (Required by `amet/Suurballe.h`)
 Implement the `P1709`-compatible `dijkstra_shortest_paths` function templates inside `namespace graph` (and alias into `namespace graph::algorithm`):
 - **Primary Overload (Multi-Source & Single-Source):**
