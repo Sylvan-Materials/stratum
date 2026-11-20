@@ -36,6 +36,8 @@ You are the Stratum Automation Code Generator. Translate this specification into
      - Unary overload taking `(const E& e)`: checks `tag_invoke(std::declval<source_id_fn>(), e)`, `e.source_id()`, or `e.source_id`.
    - **`vertex_value` (`vertex_value_fn`):** Takes `(G&& g, const U& u)`. Checks `tag_invoke(std::declval<vertex_value_fn>(), std::forward<G>(g), u)` or `std::forward<G>(g).vertex_value(u)`.
    - **`edge_value` (`edge_value_fn`):** Takes `(G&& g, const E& e)`. Checks `tag_invoke(std::declval<edge_value_fn>(), std::forward<G>(g), e)` or `std::forward<G>(g).edge_value(e)`.
+   - **1degree (degree_fn):** Takes (G&& g, const U& u). Overload A checks tag_invoke(std::declval<degree_fn>(), std::forward<G>(g), u); Overload B checks std::forward<G>(g).degree(u); Overload C checks requires(G&& g, const U& u) { graph::edges(std::forward<G>(g), u); } and returns static_cast<std::size_t>(std::ranges::distance(graph::edges(std::forward<G>(g), u))).
+
 
 3. **Graph Associated Type Traits:**
    - `template <typename G> using vertex_range_t = decltype(graph::vertices(std::declval<G&>()));`
@@ -47,13 +49,12 @@ You are the Stratum Automation Code Generator. Translate this specification into
 4. **Core Graph Concepts:**
    - **`vertex_list_graph`:** `template <typename G> concept vertex_list_graph = requires(G& g) { { graph::vertices(g) } -> std::ranges::forward_range; };`
    - **`incidence_graph`:** `template <typename G> concept incidence_graph = vertex_list_graph<G> && requires(G& g, vertex_t<G> u) { { graph::edges(g, u) } -> std::ranges::forward_range; };`
+   - **adjacency_list:** template <typename G> concept adjacency_list = incidence_graph<G>;
    - **`viewable_incidence_graph`:** `template <typename G> concept viewable_incidence_graph = vertex_list_graph<G>;` (allowing both full incidence graphs and minimal structural vertex-range fixtures like `MockGraph` in `amet` to satisfy viewability cleanly).
 5. **Copyable Ingestion Descriptors (For `load_vertices` & `load_edges`):**
    - **`copyable_vertex_t`:** `template <typename VId = std::size_t, typename VV = void> struct copyable_vertex_t` with members `VId id{}; VV value{};` (and a partial specialization `template <typename VId> struct copyable_vertex_t<VId, void>` with only `VId id{};`).
    - **`copyable_edge_t`:** `template <typename VId = std::size_t, typename EV = void> struct copyable_edge_t` with members `VId source_id{}; VId target_id{}; EV value{};` (and a partial specialization `template <typename VId> struct copyable_edge_t<VId, void>` with only `VId source_id{}; VId target_id{};`).
-
-### Part B: Inside `namespace amet`
-- Define `template <typename G> concept viewable_incidence_graph = graph::viewable_incidence_graph<G>;` so `REQUIRE(amet::viewable_incidence_graph<MockGraph>);` in `amet/test/src/test.cpp` compiles and passes directly.
+   - **Sub-namespace namespace adj_list (Inside namespace graph):** Open namespace adj_list { and re-export using graph::adjacency_list;, using graph::incidence_graph;, using graph::vertex_list_graph;, using graph::vertex_t;, using graph::edge_t;, using graph::vertex_id_t;, using graph::vertices;, using graph::edges;, using graph::vertex_id;, using graph::target_id;, using graph::source_id;, and using graph::degree;.
 
 ## 4. Output Instruction
 Emit ONLY a single ```cpp code block containing the complete, self-contained C++26 header enclosed within header guard defines (`#ifndef STRATUM_GRAPH_GRAPH_HPP` / `#define STRATUM_GRAPH_GRAPH_HPP` / `#endif`). Do not include conversational remarks before or after the block.
