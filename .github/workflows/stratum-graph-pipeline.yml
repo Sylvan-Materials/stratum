@@ -90,7 +90,9 @@ jobs:
         id: cache-pass1
         uses: actions/cache/restore@v4
         with:
-          path: scratchpad/include/graph/graph.hpp
+          path: |
+           scratchpad/include/graph/graph.hpp
+           scratchpad/include/graph/graph_concepts.hpp
           key: temp-pass1-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md') }}
 
       - name: Pass 1 - Synthesize & Syntax-Check Core Graph (graph/graph.hpp)
@@ -201,6 +203,7 @@ jobs:
             scratchpad/include/graph/adaptors/
           key: temp-pass3-${{ hashFiles('strata/specs/*.md', 'strata/graph/01-graph-core.md', 'strata/graph/02-vov-traits-and-dynamic-graph.md', 'strata/graph/03-views-and-adaptors.md') }}
       - name: Pass 3 - Synthesize & Syntax-Check Views & Filtered Adaptors
+        if: steps.cache-pass3.outputs.cache-hit != 'true'
         shell: bash
         run: |
           set -o pipefail
