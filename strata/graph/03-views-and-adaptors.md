@@ -37,6 +37,9 @@ First emit `} // namespace graph` on its own line to close `namespace graph` com
 - Corresponding `template <size_t I, ...> struct tuple_element<I, ...>` partial specializations using `using type = decltype(declval<...>().template get<I>());`.
 Close `namespace std` (`} // namespace std`) immediately after.
 - Inside every tuple_element specialization, write .template get<I>() with the .template keyword before get (never .get<I>() without .template).
+- Every `tuple_element` specialization MUST write `.template get<I>()` with the `.template` keyword literally like this:
+  `using type = decltype(declval<graph::vertex_info<VId, V>>().template get<I>());`
+
 
 ### Part C: Range Views inside `namespace graph::views`
 Open `namespace graph::views {` and define these range views using `std::views::transform` (never `std::transform_view`, and never reference nonexistent traits like `graph::vertex_value_t` or `graph::edge_value_t`—use CTAD `graph::vertex_info{...}`, `graph::neighbor_info{...}`, and `graph::edge_info{...}` or `graph::vertex_t<G>` / `graph::edge_t<G>`):
@@ -63,7 +66,8 @@ Open `namespace graph {` and define:
    - Provide deduction guides and alias `using graph::filtered_graph;` inside `namespace graph::adaptors`.
    - Do not declare `using edge_id_type` or reference nonexistent `graph::edge_id_t` inside `filtered_graph` (use `graph::vertex_id_t<G>`, `graph::vertex_t<G>`, and `graph::edge_t<G>` only).
 
-Close `namespace graph` (`} // namespace graph`).
+Close `namespace graph` (`} // namespace graph`) after the deduction guides, then open `namespace graph::adaptors { using graph::filtered_graph; } // namespace graph::adaptors` (never write an unqualified `using filtered_graph;` outside a namespace).
+
 
 ## 4. Output Instruction
 Emit ONLY a single ```cpp code block containing the complete, self-contained C++26 header enclosed within header guard defines (`#ifndef STRATUM_GRAPH_VIEWS_HPP` / `#define STRATUM_GRAPH_VIEWS_HPP` / `#endif`). Do not include conversational remarks before or after the block.
