@@ -27,7 +27,7 @@ Open `namespace graph {` and declare these three struct templates directly at na
 4. **Close `namespace graph` (`} // namespace graph`)** immediately after `edge_info<VId, void>;`.
 
 ### Part B: Structured Binding Traits inside `namespace std`
-Copy this exact block verbatim immediately after `edge_info<VId, void>;` (do not remove `.template` before `get<I>()`):
+Copy this exact block verbatim immediately after `edge_info<VId, void>;` (use `tuple_element_t<I, tuple<...>>`—never call `.get<I>()` inside `tuple_element`):
 ```cpp
 } // namespace graph
 
@@ -40,22 +40,22 @@ template <typename VId, typename E> struct tuple_size<graph::edge_info<VId, E>> 
 template <typename VId> struct tuple_size<graph::edge_info<VId, void>> : integral_constant<size_t, 2> {};
 
 template <size_t I, typename VId, typename V> struct tuple_element<I, graph::vertex_info<VId, V>> {
-    using type = decltype(declval<graph::vertex_info<VId, V>>().template get<I>());
+    using type = tuple_element_t<I, tuple<VId, V>>;
 };
 template <size_t I, typename VId> struct tuple_element<I, graph::vertex_info<VId, void>> {
-    using type = decltype(declval<graph::vertex_info<VId, void>>().template get<I>());
+    using type = tuple_element_t<I, tuple<VId>>;
 };
 template <size_t I, typename VId, typename E> struct tuple_element<I, graph::neighbor_info<VId, E>> {
-    using type = decltype(declval<graph::neighbor_info<VId, E>>().template get<I>());
+    using type = tuple_element_t<I, tuple<VId, E>>;
 };
 template <size_t I, typename VId> struct tuple_element<I, graph::neighbor_info<VId, void>> {
-    using type = decltype(declval<graph::neighbor_info<VId, void>>().template get<I>());
+    using type = tuple_element_t<I, tuple<VId>>;
 };
 template <size_t I, typename VId, typename E> struct tuple_element<I, graph::edge_info<VId, E>> {
-    using type = decltype(declval<graph::edge_info<VId, E>>().template get<I>());
+    using type = tuple_element_t<I, tuple<VId, VId, E>>;
 };
 template <size_t I, typename VId> struct tuple_element<I, graph::edge_info<VId, void>> {
-    using type = decltype(declval<graph::edge_info<VId, void>>().template get<I>());
+    using type = tuple_element_t<I, tuple<VId, VId>>;
 };
 } // namespace std
 ```
