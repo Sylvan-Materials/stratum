@@ -111,14 +111,17 @@ jobs:
 
           SOURCE="${TARGET%% :: *}"
           CHAPTER="${TARGET##* :: }"
-          BASENAME="$(basename "${CHAPTER%.tex}")"
+          FILENAME="$(basename "$CHAPTER")"
 
           if [ "$SOURCE" = "stdgraph/P1709" ]; then
             PREFIX="P1709"
             if [[ "$CHAPTER" == */* ]]; then
               REL_PATH="$CHAPTER"
+              FOLDER_TAG="${CHAPTER%%_*}"
+              BASENAME="${FOLDER_TAG}-${FILENAME%.tex}"
             else
               REL_PATH="tex/$CHAPTER"
+              BASENAME="${FILENAME%.tex}"
             fi
           else
             PREFIX="draft"
@@ -127,18 +130,21 @@ jobs:
             else
               REL_PATH="source/$CHAPTER"
             fi
+            BASENAME="${FILENAME%.tex}"
           fi
 
           echo "SOURCE=$SOURCE" >> "$GITHUB_OUTPUT"
           echo "REL_PATH=$REL_PATH" >> "$GITHUB_OUTPUT"
           echo "PREFIX=$PREFIX" >> "$GITHUB_OUTPUT"
           echo "BASENAME=$BASENAME" >> "$GITHUB_OUTPUT"
+          echo "FILENAME=$FILENAME" >> "$GITHUB_OUTPUT"
           echo "CHAPTER=$CHAPTER" >> "$GITHUB_OUTPUT"
           echo "ERA=${{ inputs.target_era || 'C++26' }}" >> "$GITHUB_OUTPUT"
+
           mkdir -p scratchpad
-          echo "Fetching $BASENAME from $SOURCE/$REL_PATH..."
-          curl -sSL --fail -o "scratchpad/$BASENAME" \
-            "https://raw.githubusercontent.com/$SOURCE/main/$REL_PATH/$BASENAME"
+          echo "Fetching $REL_PATH from $SOURCE..."
+          curl -sSL --fail -o "scratchpad/$FILENAME" \
+            "https://raw.githubusercontent.com/$SOURCE/main/$REL_PATH"
 
           # Strip LaTeX comments, index entries, and layout noise to save context tokens
           sed -e 's/%.*$//' \
