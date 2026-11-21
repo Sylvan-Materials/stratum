@@ -38,8 +38,7 @@ You are the Stratum Automation Code Generator. Translate this specification into
    - **`edge_value` (`edge_value_fn`):** Takes `(G&& g, const E& e)`. Checks `tag_invoke(std::declval<edge_value_fn>(), std::forward<G>(g), e)` or `std::forward<G>(g).edge_value(e)`.
    - **1degree (degree_fn):** Takes (G&& g, const U& u). Overload A checks tag_invoke(std::declval<degree_fn>(), std::forward<G>(g), u); Overload B checks std::forward<G>(g).degree(u); Overload C checks requires(G&& g, const U& u) { graph::edges(std::forward<G>(g), u); } and returns static_cast<std::size_t>(std::ranges::distance(graph::edges(std::forward<G>(g), u))).
    - **num_vertices (num_vertices_fn):** Takes (G&& g). Overload A checks tag_invoke(std::declval<num_vertices_fn>(), std::forward<G>(g)); Overload B checks std::forward<G>(g).num_vertices(); Overload C checks requires(G&& g) { graph::vertices(std::forward<G>(g)); } and returns static_cast<std::size_t>(std::ranges::distance(graph::vertices(std::forward<G>(g)))).
-   - **`num_edges` (`num_edges_fn`):** Takes `(G&& g)`. Overload A checks `tag_invoke(std::declval<num_edges_fn>(), std::forward<G>(g))`; Overload B checks `std::forward<G>(g).num_edges()`; Overload C checks `requires(G&& g) { graph::vertices(std::forward<G>(g)); }` and sums `static_cast<std::size_t>(std::ranges::distance(graph::edges(std::forward<G>(g), u)))` across every vertex `u` in `graph::vertices(std::forward<G>(g))`.
-
+   - **`num_edges` (`num_edges_fn`):** Takes `(G&& g)`. Overload A checks `tag_invoke(std::declval<num_edges_fn>(), std::forward<G>(g))`; Overload B checks `std::forward<G>(g).num_edges()`; Overload C checks `requires(G&& g) { graph::vertices(std::forward<G>(g)); }` and sums edges using a plain range-based `for` loop (`std::size_t total = 0; for (const auto& u : graph::vertices(g)) { total += static_cast<std::size_t>(std::ranges::distance(graph::edges(g, u))); } return total;` — never call `std::accumulate`).
 
 3. **Graph Associated Type Traits:**
    - `template <typename G> using vertex_range_t = decltype(graph::vertices(std::declval<G&>()));`
@@ -53,13 +52,14 @@ You are the Stratum Automation Code Generator. Translate this specification into
    - **`incidence_graph`:** `template <typename G> concept incidence_graph = vertex_list_graph<G> && requires(G& g, vertex_t<G> u) { { graph::edges(g, u) } -> std::ranges::forward_range; };`
    - **adjacency_list:** template <typename G> concept adjacency_list = incidence_graph<G>;
    - **`viewable_incidence_graph`:** `template <typename G> concept viewable_incidence_graph = vertex_list_graph<G>;` (allowing both full incidence graphs and minimal structural vertex-range fixtures like `MockGraph` in `amet` to satisfy viewability cleanly).
-5. 5. **Copyable Ingestion Descriptors (Top-Level Struct Templates inside `namespace graph`, Never Nested):**
+5. **Copyable Ingestion Descriptors (Top-Level Struct Templates inside `namespace graph`, Never Nested):**
 ```cpp
 template <typename VId = std::size_t, typename VV = void>
 struct copyable_vertex_t {
     VId id{};
     VV value{};
 };
+  1.Omit value completely in the <VId, void> partial specializations (never write void value{};).
 
 template <typename VId>
 struct copyable_vertex_t<VId, void> {
