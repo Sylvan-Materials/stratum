@@ -272,7 +272,7 @@ jobs:
             -f scratchpad/prompt_pass4.md \
             -st --temp 0.0 --seed 42 --log-disable --no-display-prompt \
             --repeat-penalty 1.15 \
-            -n 2500 \
+            -n 4096 \
             -t $(nproc) -c $CTX_PASS4 \
             > scratchpad/raw_pass4.txt
 
