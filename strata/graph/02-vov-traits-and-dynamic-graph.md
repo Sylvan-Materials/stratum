@@ -41,6 +41,8 @@ Define these two struct templates at namespace scope immediately after `vov_grap
 - **`template <typename VId, typename VV = void, typename EV = void> struct dynamic_vertex`:**
   - Primary template stores `VId id_{}; VV value_{}; std::vector<dynamic_edge<VId, EV>> edges_{};` and provides member accessors `id()`, mutable/`const` `value()`, and mutable/`const` `edges()`.
   - Partial specialization `template <typename VId, typename EV> struct dynamic_vertex<VId, void, EV>` stores only `VId id_{}; std::vector<dynamic_edge<VId, EV>> edges_{};` and provides `id()` and mutable/`const` `edges()`.
+  - Keep `dynamic_edge` and `dynamic_vertex` as plain C++26 aggregate structs (do **not** declare custom constructors or variadic `Args...` constructors; aggregate brace initialization `{...}` works automatically).
+
 
 ### 3. `dynamic_adjacency_graph` Class Template
 Define:
