@@ -27,7 +27,7 @@ Open `namespace graph {` and declare these three struct templates directly at na
 4. **Close `namespace graph` (`} // namespace graph`)** immediately after `edge_info<VId, void>;`.
 
 ### Part B: Structured Binding Traits inside `namespace std`
-Emit this exact namespace transition and specialization block immediately after `edge_info<VId, void>;`:
+Copy this exact block verbatim immediately after `edge_info<VId, void>;` (do not remove `.template` before `get<I>()`):
 ```cpp
 } // namespace graph
 
@@ -78,15 +78,49 @@ Close `namespace graph::views` (`} // namespace graph::views`).
 
 
 ### Part D: Branch-Pruning Adaptor inside `namespace graph` & `namespace graph::adaptors`
-Open `namespace graph {` and define:
-1. **`template  class filtered_graph`:**
-   - Wraps a pointer/reference to `G` along with vertex predicate `VPred` and edge predicate `EPred` (defaulting to always-true predicates when omitted).
-   - Provides `vertices()` filtered by `VPred` and `edges(u)` filtered by `EPred` so `filtered_graph` satisfies `graph::vertex_list_graph`, `graph::incidence_graph`, and `amet::viewable_incidence_graph`.
-   - Provide deduction guides and alias `using graph::filtered_graph;` inside `namespace graph::adaptors`.
-   - Do not declare `using edge_id_type` or reference nonexistent `graph::edge_id_t` inside `filtered_graph` (use `graph::vertex_id_t<G>`, `graph::vertex_t<G>`, and `graph::edge_t<G>` only).
+Emit this exact `filtered_graph` adaptor, deduction guides, and `namespace graph::adaptors` alias block verbatim:
+```cpp
+namespace graph {
 
-Close `namespace graph` (`} // namespace graph`) after the deduction guides, then open `namespace graph::adaptors { using graph::filtered_graph; } // namespace graph::adaptors` (never write an unqualified `using filtered_graph;` outside a namespace).
+struct always_true_pred {
+    template <typename... Args>
+    constexpr auto operator()(Args&&...) const noexcept -> bool { return true; }
+};
 
+template <typename G, typename VPred = always_true_pred, typename EPred = always_true_pred>
+class filtered_graph {
+    G* g_{nullptr};
+    [[no_unique_address]] VPred vpred_{};
+    [[no_unique_address]] EPred epred_{};
 
-## 4. Output Instruction
-Emit ONLY a single ```cpp code block containing the complete, self-contained C++26 header enclosed within header guard defines (`#ifndef STRATUM_GRAPH_VIEWS_HPP` / `#define STRATUM_GRAPH_VIEWS_HPP` / `#endif`). Do not include conversational remarks before or after the block.
+public:
+    constexpr filtered_graph() = default;
+    constexpr filtered_graph(G& g, VPred vp = {}, EPred ep = {})
+        : g_(std::addressof(g)), vpred_(std::move(vp)), epred_(std::move(ep)) {}
+
+    constexpr auto vertices() const -> decltype(auto) {
+        return graph::vertices(*g_) | std::views::filter([this](const auto& u) {
+            return std::invoke(vpred_, graph::vertex_id(*g_, u));
+        });
+    }
+
+    template <typename U>
+    constexpr auto edges(const U& u) const -> decltype(auto) {
+        return graph::edges(*g_, u) | std::views::filter([this](const auto& e) {
+            return std::invoke(epred_, e);
+        });
+    }
+};
+
+template <typename G, typename VPred, typename EPred>
+filtered_graph(G&, VPred, EPred) -> filtered_graph<G, VPred, EPred>;
+
+template <typename G, typename EPred>
+filtered_graph(G&, EPred) -> filtered_graph<G, always_true_pred, EPred>;
+
+} // namespace graph
+
+namespace graph::adaptors {
+using graph::filtered_graph;
+} // namespace graph::adaptors
+```
