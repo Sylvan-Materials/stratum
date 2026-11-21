@@ -5,7 +5,7 @@ You are the Stratum Automation Code Generator. Translate this specification into
 ## 1. Explicit Syntactic Constraints (Mandatory)
 - **Standard Headers:** Include `<concepts>`, `<cstddef>`, `<cstdint>`, `<functional>`, `<iterator>`, `<ranges>`, `<tuple>`, `<type_traits>`, `<utility>`, and `<vector>` explicitly at the top of the file.
 - **Explicit Types & Trailing Returns:** Declare concrete variable types explicitly inside function bodies. Reserve `auto` strictly for trailing return placeholders (`-> decltype(auto)` or `-> void`) and concept-constrained return types (`-> std::integral auto`). Never write `const auto` before a function name, and never place `auto` inside template argument lists or `requires(...)` parameter lists.
-- **Separate Non-Template Niebloid Structs:** Declare every CPO functor (`vertices_fn`, `edges_fn`, `vertex_id_fn`, `target_id_fn`, `source_id_fn`, `vertex_value_fn`, `edge_value_fn`) as a plain non-template `struct`, followed immediately by its `inline constexpr` Niebloid instance variable.
+- **Separate Non-Template Niebloid Structs:** Declare every CPO functor (`vertices_fn`, `edges_fn`, `vertex_id_fn`, `target_id_fn`, `source_id_fn`, `vertex_value_fn`, `edge_value_fn`, `degree_fn`, `num_vertices_fn`, `num_edges_fn`, `find_vertex_fn`) as a plain non-template `struct`, followed immediately by its `inline constexpr` Niebloid instance variable.
 - **Constrained Overload Sets (Exact C++26 Form):**
   Every CPO overload inside a functor struct must follow this exact syntax (never omit `auto operator()(...) const -> decltype(auto)` or the second `requires` keyword):
   ```cpp
@@ -23,7 +23,7 @@ You are the Stratum Automation Code Generator. Translate this specification into
 - **Consistent Parameter Names (g, u, e):** Name graph parameters g, vertex parameters u, and edge parameters e consistently in both function signatures (G&& g, const U& u) and requires(...) parameter lists, and use those exact parameter names (std::forward<G>(g), u, e) inside the function body. Never invent dummy names like gx, ux, or ex.
 - **Strictly namespace graph (Never namespace std::graph):** Despite P1709 using std::graph, emit all core graph CPOs, concepts, traits, and descriptors inside top-level namespace graph (never namespace std::graph).
 
-## 2. Target Component Archetype (`namespace graph` & `namespace amet`)
+## 2. Target Component Archetype (`namespace gNraph` & `namespace amet`)
 - **Purpose:** Foundational graph abstraction layer supporting all seven Stratum container archetypes (Standard Adjacency Lists, Static CSR, Zero-Storage Procedural Graphs, PCSR, \(k^2\)-Trees, HBA, and Flat Edge Lists) while providing exact API compatibility for `amet`.
 - **Root Namespaces:** Define all core graph CPOs, concepts, type aliases, and copyable ingestion descriptors directly inside `namespace graph`.
 

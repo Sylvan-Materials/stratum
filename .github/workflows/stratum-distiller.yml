@@ -19,6 +19,13 @@ on:
           - 'stdgraph/P1709 :: specification.tex'
           - 'stdgraph/P1709 :: conventions.tex'
           - 'stdgraph/P1709 :: D3128_Algorithms/tex/algorithms.tex'
+          - 'stdgraph/P1709 :: D3128_Algorithms/tex/revision.tex'
+          - 'stdgraph/P1709 :: D3131_Containers/tex/containers.tex'
+          - 'stdgraph/P1709 :: D3131_Containers/tex/revision.tex'
+          - 'stdgraph/P1709 :: D3130_Container_Interface/tex/container_nterface.tex'
+          - 'stdgraph/P1709 :: D3130_Container_Interface/tex/revision.tex'
+          - 'stdgraph/P1709 :: D3129_Views/tex/views.tex'
+          - 'stdgraph/P1709 :: D3129_Views/tex/revision.tex'
       custom_spec_target:
         description: 'Optional override (format: owner/repo :: filename.tex)'
         required: false
