@@ -263,8 +263,6 @@ jobs:
         run: |
           set -o pipefail
           cat scratchpad/spec_preamble.md strata/graph/04-graph-algorithms.md > scratchpad/prompt_pass4.md
-          printf '\n\n## Previously Synthesized Dependency (graph/graph.hpp)\n```cpp\n' >> scratchpad/prompt_pass4.md
-          cat scratchpad/include/graph/graph.hpp >> scratchpad/prompt_pass4.md
           printf '\n```\n' >> scratchpad/prompt_pass4.md
 
           ./llama.cpp/build/bin/llama-cli \

@@ -1,3 +1,5 @@
+[![License](https://shields.io/github/Sylvan-Materials/stratum)](LICENSE)
+[![Test Status](https://github.com/Sylvan-Materials/stratum/actions/workflows/stratum-graph-pipeline.yml/badge.svg)](https://github.com/Sylvan-Materials/stratum/actions/workflows/stratum-graph-pipeline.yml)
 # stratum
 cpo graph theory incubator
 
@@ -24,3 +26,7 @@ Stratum introduces a new open-source paradigm. We do not collaborate on raw sour
     - Zero C++ in Stratum: Your C++ doctest files stay in your own consumer repository and the stratum ci phase can clone and run them.
     - Ephemeral CI Verification: Open a Pull Request adding a verification step (or repository entry) to .github/workflows/stratum-graph-pipeline.yml that clones your test suite into scratchpad/ and compiles it against Stratum's freshly synthesized headers under clang++, g++, ASan, and UBSan.
     - Guaranteed Contract Stability: Once your doctest suite is wired into the pipeline, every future update to Stratum's language specs or domain strata must pass your real-world tests before shipping a new fruition release.
+
+## ⚖️ License
+
+Distributed under the MIT License. See `LICENSE` for more information.

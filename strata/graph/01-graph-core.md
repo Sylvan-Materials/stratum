@@ -90,7 +90,24 @@ struct copyable_edge_t<VId, void> {
 };
 ```
    - **`copyable_edge_t`:** `template <typename VId = std::size_t, typename EV = void> struct copyable_edge_t` with members `VId source_id{}; VId target_id{}; EV value{};` (and a partial specialization `template <typename VId> struct copyable_edge_t<VId, void>` with only `VId source_id{}; VId target_id{};`).
-   - **Sub-namespace namespace adj_list (Inside namespace graph):** Open namespace adj_list { and re-export using graph::adjacency_list;, using graph::incidence_graph;, using graph::vertex_list_graph;, using graph::vertex_t;, using graph::edge_t;, using graph::vertex_id_t;, using graph::vertices;, using graph::edges;, using graph::vertex_id;, using graph::target_id;, using graph::source_id;, and using graph::degree;.
+   - **Sub-namespace namespace adj_list (Inside namespace graph):** ```cpp
+   namespace adj_list {
+using graph::adjacency_list;
+using graph::incidence_graph;
+using graph::vertex_list_graph;
+using graph::vertex_t;
+using graph::edge_t;
+using graph::vertex_id_t;
+using graph::vertices;
+using graph::edges;
+using graph::vertex_id;
+using graph::target_id;
+using graph::source_id;
+using graph::degree;
+using graph::num_vertices;
+using graph::num_edges;
+} // namespace adj_list
+```
 
 ## 4. Output Instruction
 Emit ONLY a single ```cpp code block containing the complete, self-contained C++26 header enclosed within header guard defines (`#ifndef STRATUM_GRAPH_GRAPH_HPP` / `#define STRATUM_GRAPH_GRAPH_HPP` / `#endif`). Do not include conversational remarks before or after the block.
