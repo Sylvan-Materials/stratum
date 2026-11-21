@@ -151,7 +151,7 @@ jobs:
               -e 's/\\indexlibrary[^}]*}//g' \
               -e 's/\\indextext[^}]*}//g' \
               -e '/^[[:space:]]*$/d' \
-              "scratchpad/$BASENAME" > scratchpad/cleaned_spec.txt
+              "scratchpad/$FILENAME" > scratchpad/cleaned_spec.txt
 
           echo "Cleaned spec line count: $(wc -l < scratchpad/cleaned_spec.txt)"
 
