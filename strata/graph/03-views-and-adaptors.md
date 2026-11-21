@@ -61,6 +61,8 @@ Open `namespace graph {` and define:
    - Wraps a pointer/reference to `G` along with vertex predicate `VPred` and edge predicate `EPred` (defaulting to always-true predicates when omitted).
    - Provides `vertices()` filtered by `VPred` and `edges(u)` filtered by `EPred` so `filtered_graph` satisfies `graph::vertex_list_graph`, `graph::incidence_graph`, and `amet::viewable_incidence_graph`.
    - Provide deduction guides and alias `using graph::filtered_graph;` inside `namespace graph::adaptors`.
+   - Do not declare `using edge_id_type` or reference nonexistent `graph::edge_id_t` inside `filtered_graph` (use `graph::vertex_id_t<G>`, `graph::vertex_t<G>`, and `graph::edge_t<G>` only).
+
 Close `namespace graph` (`} // namespace graph`).
 
 ## 4. Output Instruction
