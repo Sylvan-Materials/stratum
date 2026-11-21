@@ -27,19 +27,38 @@ Open `namespace graph {` and declare these three struct templates directly at na
 4. **Close `namespace graph` (`} // namespace graph`)** immediately after `edge_info<VId, void>;`.
 
 ### Part B: Structured Binding Traits inside `namespace std`
-First emit `} // namespace graph` on its own line to close `namespace graph` completely. Then open `namespace std {` at global scope and define partial specializations (always using `template <typename VId, ...>` or `template <typename VId>`, never empty `template <>`) for `tuple_size` and `tuple_element`:
-- `template <typename VId, typename V> struct tuple_size<graph::vertex_info<VId, V>> : integral_constant<size_t, 2> {};`
-- `template <typename VId> struct tuple_size<graph::vertex_info<VId, void>> : integral_constant<size_t, 1> {};`
-- `template <typename VId, typename E> struct tuple_size<graph::neighbor_info<VId, E>> : integral_constant<size_t, 2> {};`
-- `template <typename VId> struct tuple_size<graph::neighbor_info<VId, void>> : integral_constant<size_t, 1> {};`
-- `template <typename VId, typename E> struct tuple_size<graph::edge_info<VId, E>> : integral_constant<size_t, 3> {};`
-- `template <typename VId> struct tuple_size<graph::edge_info<VId, void>> : integral_constant<size_t, 2> {};`
-- Corresponding `template <size_t I, ...> struct tuple_element<I, ...>` partial specializations using `using type = decltype(declval<...>().template get<I>());`.
-Close `namespace std` (`} // namespace std`) immediately after.
-- Inside every tuple_element specialization, write .template get<I>() with the .template keyword before get (never .get<I>() without .template).
-- Every `tuple_element` specialization MUST write `.template get<I>()` with the `.template` keyword literally like this:
-  `using type = decltype(declval<graph::vertex_info<VId, V>>().template get<I>());`
+Emit this exact namespace transition and specialization block immediately after `edge_info<VId, void>;`:
+```cpp
+} // namespace graph
 
+namespace std {
+template <typename VId, typename V> struct tuple_size<graph::vertex_info<VId, V>> : integral_constant<size_t, 2> {};
+template <typename VId> struct tuple_size<graph::vertex_info<VId, void>> : integral_constant<size_t, 1> {};
+template <typename VId, typename E> struct tuple_size<graph::neighbor_info<VId, E>> : integral_constant<size_t, 2> {};
+template <typename VId> struct tuple_size<graph::neighbor_info<VId, void>> : integral_constant<size_t, 1> {};
+template <typename VId, typename E> struct tuple_size<graph::edge_info<VId, E>> : integral_constant<size_t, 3> {};
+template <typename VId> struct tuple_size<graph::edge_info<VId, void>> : integral_constant<size_t, 2> {};
+
+template <size_t I, typename VId, typename V> struct tuple_element<I, graph::vertex_info<VId, V>> {
+    using type = decltype(declval<graph::vertex_info<VId, V>>().template get<I>());
+};
+template <size_t I, typename VId> struct tuple_element<I, graph::vertex_info<VId, void>> {
+    using type = decltype(declval<graph::vertex_info<VId, void>>().template get<I>());
+};
+template <size_t I, typename VId, typename E> struct tuple_element<I, graph::neighbor_info<VId, E>> {
+    using type = decltype(declval<graph::neighbor_info<VId, E>>().template get<I>());
+};
+template <size_t I, typename VId> struct tuple_element<I, graph::neighbor_info<VId, void>> {
+    using type = decltype(declval<graph::neighbor_info<VId, void>>().template get<I>());
+};
+template <size_t I, typename VId, typename E> struct tuple_element<I, graph::edge_info<VId, E>> {
+    using type = decltype(declval<graph::edge_info<VId, E>>().template get<I>());
+};
+template <size_t I, typename VId> struct tuple_element<I, graph::edge_info<VId, void>> {
+    using type = decltype(declval<graph::edge_info<VId, void>>().template get<I>());
+};
+} // namespace std
+```
 
 ### Part C: Range Views inside `namespace graph::views`
 Open `namespace graph::views {` and define these range views using `std::views::transform` (never `std::transform_view`, and never reference nonexistent traits like `graph::vertex_value_t` or `graph::edge_value_t`—use CTAD `graph::vertex_info{...}`, `graph::neighbor_info{...}`, and `graph::edge_info{...}` or `graph::vertex_t<G>` / `graph::edge_t<G>`):
