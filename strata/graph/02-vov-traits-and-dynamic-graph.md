@@ -11,13 +11,6 @@ You are the Stratum Automation Code Generator. Translate this specification into
 ## 2. Target Component Archetype (`namespace graph::container`)
 - **Archetype:** Standard Adjacency List container (`dynamic_adjacency_graph`) parameterized by `vov_graph_traits`, matching `stdgraph/P1709` and `amet`'s exact container interface.
 - **Directed & Undirected Modes:** Must support both strictly directed graphs (`Undirected == false`) and undirected / bidirectional graphs (`Undirected == true`), as well as `void` and non-`void` vertex/edge/graph value types.
-- **Sub-namespace namespace container (Inside namespace graph):** ```cpp
-   namespace container {
-using graph::num_vertices;
-using graph::num_edges;
-} // namespace container
-```
-
 
 ## 3. Exact Top-to-Bottom Declaration Sequence inside `namespace graph::container` (Mandatory)
 
@@ -97,6 +90,9 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
   - `auto edge_value(edge_type& e) -> edge_value_type& and auto edge_value(const edge_type& e) const -> const edge_value_type& returning e.value() (enabled via requires (!std::is_void_v<edge_value_type>);` do not generate any other edge_value overloads).
   - `auto size() const noexcept -> std::size_t` (returns `vertices_.size()`)
   - `auto operator[](vertex_id_type uid) -> vertex_type&` and `const` overload.
+- **ADL Hidden Friends (Inside `dynamic_adjacency_graph`):**
+  - `friend constexpr auto num_vertices(const dynamic_adjacency_graph& g) noexcept -> std::size_t { return g.vertices_.size(); }`
+  - `friend constexpr auto num_edges(const dynamic_adjacency_graph& g) noexcept -> std::size_t` (summing `v.edges_.size()` across `g.vertices_`).
 
 ## 4. Output Instruction
 Emit ONLY a single ```cpp code block containing the complete, self-contained C++26 header enclosed within header guard defines (`#ifndef STRATUM_GRAPH_DYNAMIC_ADJACENCY_GRAPH_HPP` / `#define STRATUM_GRAPH_DYNAMIC_ADJACENCY_GRAPH_HPP` / `#endif`). Do not include conversational remarks before or after the block.
