@@ -45,8 +45,8 @@ Implement the `P1709`-compatible `dijkstra_shortest_paths` function templates in
   auto dijkstra_shortest_paths(
       G&& g,
       const Sources& sources,
-      Distances& distances,
-      Predecessors& predecessors,
+      Distances&& distances,
+      Predecessors&& predecessors,
       WF&& weight = {},
       [[maybe_unused]] const Alloc& alloc = {}
   ) -> void;

@@ -11,6 +11,13 @@ You are the Stratum Automation Code Generator. Translate this specification into
 ## 2. Target Component Archetype (`namespace graph::container`)
 - **Archetype:** Standard Adjacency List container (`dynamic_adjacency_graph`) parameterized by `vov_graph_traits`, matching `stdgraph/P1709` and `amet`'s exact container interface.
 - **Directed & Undirected Modes:** Must support both strictly directed graphs (`Undirected == false`) and undirected / bidirectional graphs (`Undirected == true`), as well as `void` and non-`void` vertex/edge/graph value types.
+- **Sub-namespace namespace container (Inside namespace graph):** ```cpp
+   namespace container {
+using graph::num_vertices;
+using graph::num_edges;
+} // namespace container
+```
+
 
 ## 3. Exact Top-to-Bottom Declaration Sequence inside `namespace graph::container` (Mandatory)
 
