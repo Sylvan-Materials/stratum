@@ -27,6 +27,10 @@ struct container_value_fn {
     constexpr auto operator()(const G&, const VId& uid) const -> decltype(auto) {
         return (*container_)[static_cast<std::size_t>(uid)];
     }
+    template <typename VId>
+    constexpr auto operator[](const VId& uid) const -> decltype(auto) {
+        return (*container_)[static_cast<std::size_t>(uid)];
+    }
 };
 ```
 
@@ -64,6 +68,7 @@ Implement the `P1709`-compatible `dijkstra_shortest_paths` function templates in
   using Entry = std::pair<Weight, graph::vertex_id_t<G>>;
   std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> pq;
   - Read and write distances and predecessors via helper lambdas dist_of(u) and pred_of(u) that check if constexpr (std::invocable<Distances&, const G&, graph::vertex_id_t<G>>) { return distances(g, u); } else { return distances[static_cast<std::size_t>(u)]; } (do not call .resize() on distances or predecessors when std::invocable is true).
+  Always use pq.emplace(Weight{0}, s) and pq.emplace(dist_u + w, v) (never pq.push({...})), and never write distances[u] or predecessors[v] directly when Distances or Predecessors is a callable property function—use dist_of(u) and pred_of(u) exclusively.
 
 ### 2. Iterative Depth-First Search (`depth_first_search` — For `cnpm`, `winnow`, `*-thresher`)
 Implement a zero-recursion, stack-allocated iterative DFS traversal inside `namespace graph` (and alias into `namespace graph::algorithm`):
