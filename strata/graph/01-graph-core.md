@@ -42,10 +42,9 @@ You are the Stratum Automation Code Generator. Translate this specification into
    - **`find_vertex` (`find_vertex_fn`):** Takes `(G&& g, const VId& uid)`. Overload A checks `tag_invoke(std::declval<find_vertex_fn>(), std::forward<G>(g), uid)`; Overload B checks `std::forward<G>(g).find_vertex(uid)`; Overload C checks `requires(G&& g) { graph::vertices(std::forward<G>(g)); }` and returns `std::ranges::next(std::ranges::begin(graph::vertices(std::forward<G>(g))), static_cast<std::ptrdiff_t>(uid), std::ranges::end(graph::vertices(std::forward<G>(g))))`.
 
    - **`target_id` (`target_id_fn`):**
-     - Binary Overload A taking `(G&& g, const E& e)`: checks `tag_invoke(std::declval<target_id_fn>(), std::forward<G>(g), e)` and returns `tag_invoke(*this, std::forward<G>(g), e)`.
-     - Binary Overload B taking `(G&& g, const E& e)`: checks `std::forward<G>(g).target_id(e)` (when Overload A does not match) and returns `std::forward<G>(g).target_id(e)`.
-     - Binary Overload C taking `(G&& g, const E& e)`: when neither `tag_invoke` nor `std::forward<G>(g).target_id(e)` matches, delegates directly to `(*this)(e)` so view descriptors like `neighbor_info` and `edge_info` work seamlessly.
-     - Unary overloads taking `(const E& e)`: checks `tag_invoke(std::declval<target_id_fn>(), e)`, `e.target_id()`, or `e.target_id`.   - **`source_id` (`source_id_fn`):**
+     - Binary overload taking `(G&& g, const E& e)`: checks `tag_invoke(std::declval<target_id_fn>(), std::forward<G>(g), e)` or `std::forward<G>(g).target_id(e)`.
+     - Unary overload taking `(const E& e)`: checks `tag_invoke(std::declval<target_id_fn>(), e)`, `e.target_id()`, or `e.target_id`.
+   - **`source_id` (`source_id_fn`):**
      - Binary overload taking `(G&& g, const E& e)`: checks `tag_invoke(std::declval<source_id_fn>(), std::forward<G>(g), e)` or `std::forward<G>(g).source_id(e)`.
      - Unary overload taking `(const E& e)`: checks `tag_invoke(std::declval<source_id_fn>(), e)`, `e.source_id()`, or `e.source_id`.
    - **`vertex_value` (`vertex_value_fn`):** Takes `(G&& g, const U& u)`. Checks `tag_invoke(std::declval<vertex_value_fn>(), std::forward<G>(g), u)` or `std::forward<G>(g).vertex_value(u)`.
