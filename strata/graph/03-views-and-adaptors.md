@@ -27,6 +27,7 @@ Open `namespace graph {` and declare these three struct templates directly at na
 4. **Close `namespace graph` (`} // namespace graph`)** immediately after `edge_info<VId, void>;`.
 
 ### Part B: Structured Binding Traits inside `namespace std`
+CRITICAL: You MUST emit } // namespace graph followed by namespace std { immediately before the first tuple_size specialization (never specialize tuple_size inside namespace graph).
 Copy this exact block verbatim immediately after `edge_info<VId, void>;` (use `tuple_element_t<I, tuple<...>>`—never call `.get<I>()` inside `tuple_element`):
 ```cpp
 } // namespace graph
