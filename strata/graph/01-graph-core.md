@@ -23,6 +23,15 @@ You are the Stratum Automation Code Generator. Translate this specification into
   {
       return std::forward<G>(g).vertices();
   }
+
+  template <typename G>
+  auto operator()(G&& g) const -> decltype(auto)
+      requires (!requires(G&& g) { tag_invoke(std::declval<vertices_fn>(), std::forward<G>(g)); }) &&
+               (!requires(G&& g) { std::forward<G>(g).vertices(); }) &&
+               std::ranges::forward_range<G>
+  {
+      return std::forward<G>(g);
+  }
   ```
 - **Parenthesize EVERY Negated `requires` Expression (Including the Second One on Overload C):** In C++26, **every** `!requires(...) { ... }` term must be wrapped in its own outer parentheses—write `requires (!requires(...) { ... }) && (!requires(...) { ... })`, never `&& !requires(...) { ... }`. Also mark `[[maybe_unused]] G&& g` on fallback overloads that ignore `g` so `-Wall -Wextra` emits zero warnings.
 
