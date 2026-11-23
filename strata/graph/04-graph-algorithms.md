@@ -74,8 +74,14 @@ Implement the `P1709`-compatible `dijkstra_shortest_paths` function templates in
 Implement a zero-recursion, stack-allocated iterative DFS traversal inside `namespace graph` (and alias into `namespace graph::algorithm`):
 - **Visitor Hooks (Optional via `if constexpr (requires { ... })`):**
   - Supports lightweight visitor objects with any subset of `discover_vertex(uid)`, `examine_edge(e)`, `tree_edge(e)`, `back_edge(e)`, and `finish_vertex(uid)`.
-- **Signature:**
-  - `template <typename G, typename Visitor> auto depth_first_search(G&& g, graph::vertex_id_t<G> start, Visitor&& vis) -> void` (plus an all-components overload `depth_first_search(G&& g, Visitor&& vis) -> void` that sweeps unvisited vertices `0 .. N-1`).
+- **Signature & Body Setup:**
+  - `template <typename G, typename Visitor> auto depth_first_search(G&& g, graph::vertex_id_t<G> start, Visitor&& vis) -> void`
+  - The **first two statements** inside `depth_first_search` MUST be:
+    ```cpp
+    std::vector<std::uint8_t> state(graph::num_vertices(g), 0);
+    std::stack<graph::vertex_id_t<G>> st;
+    ```
+    before pushing `start` onto `st` and entering `while (!st.empty())`.
   - Uses explicit `std::vector<std::uint8_t> state` (`0 = unvisited`, `1 = visiting`, `2 = visited`) and an explicit `std::vector` stack to prevent stack overflow on deep AST/parse graphs in `antlr4-thresher` and `json-thresher`.
   - Declare std::vector<std::uint8_t> state(graph::num_vertices(g), 0); and std::stack<graph::vertex_id_t<G>> st; with explicit std:: prefixes.
 - **Stop Immediately After depth_first_search:** Immediately after closing namespace graph::algorithm following depth_first_search, emit #endif and close the ``` code fence. Do not re-emit vertex_info, neighbor_info, edge_info, std::tuple_size, or any view definitions.
