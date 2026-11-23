@@ -16,6 +16,8 @@ You are the Stratum Automation Code Generator. Translate this specification into
       return tag_invoke(*this, std::forward<G>(g));
   }
   ```
+- **Parenthesize Negated `requires` Expressions:** In C++26, a negated `requires` expression inside a `requires` clause MUST always be wrapped in outer parentheses: write `requires (!requires(...) { ... })`—never write `requires !requires(...) { ... }` without parentheses. Also mark `[[maybe_unused]] G&& g` on fallback overloads that ignore `g` so `-Wall -Wextra` emits zero warnings.
+
   - Inside each CPO functor struct, implement each customization tier as a separate templated `operator()` overload carrying a parameterized `requires requires(...)` clause on its signature.
   - Inside signature `requires` clauses, use `std::declval<FunctorType>()` as the tag argument to `tag_invoke` (never `*this` or `FunctorType{}` inside the incomplete struct body). Inside the evaluated function body, invoke `tag_invoke(*this, ...)` or the member access/method directly (never call `std::declval` inside an evaluated body, and never recursively call the outer Niebloid instance).
   - Negate higher-priority `tag_invoke` constraints on fallback overloads to prevent overload ambiguity.
