@@ -55,9 +55,19 @@ Implement the `P1709`-compatible `dijkstra_shortest_paths` function templates in
       [[maybe_unused]] const Alloc& alloc = {}
   ) -> void;
   ```
-- **Range-of-Sources Overload:** Add `requires std::ranges::input_range<Sources>` to the `Sources` overload so single vertex IDs never match it.
-- **Single-Source Convenience Overload:** Add `requires (!std::ranges::input_range<Source>)` to the single-source overload `dijkstra_shortest_paths(G&& g, const Source& source, Distances&& distances, Predecessors&& predecessors, WF&& weight = {}, [[maybe_unused]] const Alloc& alloc = {}) -> void` and delegate via `std::array<std::decay_t<Source>, 1>{source}`.
-  - Overload accepting a single `graph::vertex_id_t<G> source` instead of a `Sources` range, delegating to the primary overload via a single-element `std::array<graph::vertex_id_t<G>, 1>{source}`.
+- **Unified Single-Source & Multi-Source Overload (No Overload Ambiguity):**
+  Define **one** `dijkstra_shortest_paths` function template (do not split into two competing overloads) that handles both a single vertex ID `source` and a range of `sources` via `if constexpr`:
+  ```cpp
+  if constexpr (std::ranges::input_range<Sources>) {
+      for (const auto& s : sources) {
+          dist_of(s) = Weight{0};
+          pq.emplace(Weight{0}, s);
+      }
+  } else {
+      dist_of(sources) = Weight{0};
+      pq.emplace(Weight{0}, sources);
+  }
+  ```
 - **Default Weight Handling:**
   - If `WF` is omitted or default-constructed without a target, or if a caller passes a custom callable `weight(g, uv)` (such as `amet`'s `[](const auto& gr, const auto& uv) -> double { return 1.0; }`), invoke `std::invoke(weight, g, uv)` to compute edge weights. Also support unary weight callables `weight(uv)` via `if constexpr (std::invocable<WF, const G&, const graph::edge_t<G>&>)`.
 - **Initialization & Relaxation Invariants:**
