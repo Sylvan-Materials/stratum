@@ -67,6 +67,7 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
   3. **`load_vertices(VRng&& vrng, VProj vproj = {}) -> void`:**
      - Iterates over every element `elem` in `vrng` and invokes `auto projected = std::invoke(vproj, elem);`.
      - Declare vertex_id_type id{}; (in load_vertices) and vertex_id_type src{}; vertex_id_type dst{}; (in load_edges) before the if constexpr chain so they remain in scope after the branches close.
+     - `auto edges(const vertex_type& u) const -> const std::vector<edge_type>& { return u.edges(); }` (note the `const` return type so calling `u.edges()` on `const vertex_type&` never discards `const` qualifiers).
      - Detect the shape of `projected` strictly using structural `if constexpr (requires { ... })` checks (never `std::is_same_v` on external trait names):
        - `if constexpr (requires { projected.id; })` — extracts `vertex_id_type id = static_cast<vertex_id_type>(projected.id);` (and assigns `projected.value` when `!std::is_void_v<vertex_value_type>` and `requires { projected.value; }`).
        - `else if constexpr (requires { std::get<0>(projected); })` — extracts `vertex_id_type id = static_cast<vertex_id_type>(std::get<0>(projected));` (and assigns `std::get<1>(projected)` when `!std::is_void_v<vertex_value_type>`).
