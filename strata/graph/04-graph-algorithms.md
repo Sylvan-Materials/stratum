@@ -55,7 +55,8 @@ Implement the `P1709`-compatible `dijkstra_shortest_paths` function templates in
       [[maybe_unused]] const Alloc& alloc = {}
   ) -> void;
   ```
-- **Single-Source Convenience Overload:**
+- **Range-of-Sources Overload:** Add `requires std::ranges::input_range<Sources>` to the `Sources` overload so single vertex IDs never match it.
+- **Single-Source Convenience Overload:** Add `requires (!std::ranges::input_range<Source>)` to the single-source overload `dijkstra_shortest_paths(G&& g, const Source& source, Distances&& distances, Predecessors&& predecessors, WF&& weight = {}, [[maybe_unused]] const Alloc& alloc = {}) -> void` and delegate via `std::array<std::decay_t<Source>, 1>{source}`.
   - Overload accepting a single `graph::vertex_id_t<G> source` instead of a `Sources` range, delegating to the primary overload via a single-element `std::array<graph::vertex_id_t<G>, 1>{source}`.
 - **Default Weight Handling:**
   - If `WF` is omitted or default-constructed without a target, or if a caller passes a custom callable `weight(g, uv)` (such as `amet`'s `[](const auto& gr, const auto& uv) -> double { return 1.0; }`), invoke `std::invoke(weight, g, uv)` to compute edge weights. Also support unary weight callables `weight(uv)` via `if constexpr (std::invocable<WF, const G&, const graph::edge_t<G>&>)`.
@@ -69,6 +70,9 @@ Implement the `P1709`-compatible `dijkstra_shortest_paths` function templates in
   std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> pq;
   - Read and write distances and predecessors via helper lambdas dist_of(u) and pred_of(u) that check if constexpr (std::invocable<Distances&, const G&, graph::vertex_id_t<G>>) { return distances(g, u); } else { return distances[static_cast<std::size_t>(u)]; } (do not call .resize() on distances or predecessors when std::invocable is true).
   Always use pq.emplace(Weight{0}, s) and pq.emplace(dist_u + w, v) (never pq.push({...})), and never write distances[u] or predecessors[v] directly when Distances or Predecessors is a callable property function—use dist_of(u) and pred_of(u) exclusively.
+- **CRITICAL Reference Return:** Both `dist_of` and `pred_of` lambdas MUST declare `-> decltype(auto)` explicitly so they return mutable lvalue references (`double&`, `VId&`), never deduced prvalues:
+  `auto dist_of = [&](auto uid) -> decltype(auto) { ... };`
+  `auto pred_of = [&](auto uid) -> decltype(auto) { ... };`
 
 ### 2. Iterative Depth-First Search (`depth_first_search` — For `cnpm`, `winnow`, `*-thresher`)
 Implement a zero-recursion, stack-allocated iterative DFS traversal inside `namespace graph` (and alias into `namespace graph::algorithm`):
