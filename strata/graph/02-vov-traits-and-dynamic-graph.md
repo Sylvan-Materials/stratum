@@ -94,6 +94,13 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
 - **ADL Hidden Friends (Inside `dynamic_adjacency_graph`):**
   - `friend constexpr auto num_vertices(const dynamic_adjacency_graph& g) noexcept -> std::size_t { return g.vertices_.size(); }`
   - `friend constexpr auto num_edges(const dynamic_adjacency_graph& g) noexcept -> std::size_t` (summing `v.edges_.size()` across `g.vertices_`).
+### Container & CPO Edge Traversal Rules
+  1. **Const-Correct Accessors (C++23/2c Compatible):**
+    - Never return a non-const `std::vector<edge_type>&` from an accessor taking `const vertex_type&`.
+    - Always generate paired `const` and non-`const` overloads—or use C++23 deducing `this` (`decltype(auto) edges(this auto&& self, auto&& u) { return std::forward_like<decltype(u)>(u.edges()); }`)—so `const` vertex descriptors return `const` edge ranges.
+  2. **Neighbor Proxy Unpacking (`graph::neighbor_info`):**
+    - Range-based `for` loops over `graph::edges(g, u)` yield `graph::neighbor_info` proxies rather than raw edge descriptors.
+    - Always unpack neighbor vertices using C++23 structured bindings (`for (auto&& [neighbor_id, edge] : graph::edges(g, u))`) or read `.target_id` directly; never pass a `neighbor_info` proxy to `graph::target_id(g, edge_ref)`.
 
 ## 4. Output Instruction
 Emit ONLY a single ```cpp code block containing the complete, self-contained C++26 header enclosed within header guard defines (`#ifndef STRATUM_GRAPH_DYNAMIC_ADJACENCY_GRAPH_HPP` / `#define STRATUM_GRAPH_DYNAMIC_ADJACENCY_GRAPH_HPP` / `#endif`). Do not include conversational remarks before or after the block.
