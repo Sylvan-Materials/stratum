@@ -73,9 +73,8 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
        - `else if constexpr (requires { std::get<0>(projected); })` — extracts `vertex_id_type id = static_cast<vertex_id_type>(std::get<0>(projected));` (and assigns `std::get<1>(projected)` when `!std::is_void_v<vertex_value_type>`).
        - `else` — treats `projected` directly as `vertex_id_type id = static_cast<vertex_id_type>(projected);`.
      - Computes `std::size_t idx = static_cast<std::size_t>(id);`, resizes `vertices_` if `idx >= vertices_.size()`, and assigns `vertices_[idx].id_ = id;`.
-  4. **Edge Accessors (Preserve `const` on `const vertex_type&`):**
-    - `auto edges(const vertex_type& u) const -> const std::vector<edge_type>& { return u.edges(); }` (CRITICAL: always return `const std::vector<edge_type>&` when `u` is `const vertex_type&`—never return non-const `std::vector<edge_type>&`).
-    - `auto edges(vertex_id_type uid) const -> const std::vector<edge_type>& { return vertices_[uid].edges(); }`  
+- **Const-Correct Edge Accessors:** Ensure every `edges(...)` member function on `dynamic_adjacency_graph` that takes a `const` vertex parameter or is marked `const` returns a `const`-qualified reference (never a non-const reference), so reading edges from a `const` vertex never discards `const` qualifiers.
+  
   4. **`load_edges(ERng&& erng, EProj eproj = {}) -> void`:**
      - Iterates over every element `elem` in `erng` and invokes `auto projected = std::invoke(eproj, elem);`.
      - Detect the shape of `projected` strictly using structural `if constexpr (requires { ... })` checks:
