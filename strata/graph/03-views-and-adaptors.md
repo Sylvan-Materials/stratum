@@ -68,13 +68,13 @@ Open `namespace graph::views {` and define these range views using `std::views::
 2. **`template <typename G, typename VVF> auto vertexlist(G&& g, VVF&& vvf) -> decltype(auto)`:**
    - Explicitly declare `template <typename G, typename VVF>` above the signature. Returns `graph::vertices(g) | std::views::transform([&g, vvf = std::forward<VVF>(vvf)](const auto& u) { return graph::vertex_info{graph::vertex_id(g, u), std::invoke(vvf, g, u)}; })`.
 3. **`template <std::ranges::viewable_range R> struct incidence_view`:**
-   - Inherits publicly from `std::ranges::view_interface<incidence_view<R>>`, stores `R base_{};`, defines `using iterator = std::ranges::iterator_t<R>;`, has default constructor plus `constexpr explicit incidence_view(R r) : base_(std::move(r)) {}`, and defines `begin()` / `end()` (plus `const` overloads constrained with `requires std::ranges::range<const R>`) returning `std::ranges::begin(base_)` and `std::ranges::end(base_)`.
+   - Inherits publicly from `std::ranges::view_interface<incidence_view<R>>`, stores `R base_{};`, defines `using iterator = std::ranges::iterator_t<R>;`, has default constructor plus `constexpr explicit incidence_view(R r) : base_(std::move(r)) {}`, and defines `begin()` / `end()` plus `const` overloads written with the trailing return type BEFORE the `requires` clause (`constexpr auto begin() const -> decltype(auto) requires std::ranges::range<const R> { return std::ranges::begin(base_); }` and `constexpr auto end() const -> decltype(auto) requires std::ranges::range<const R> { return std::ranges::end(base_); }`).
 4. **`template <typename G, typename U> auto incidence(G&& g, const U& u) -> decltype(auto)`:**
    - Returns `incidence_view{graph::edges(g, u) | std::views::transform([&g](const auto& e) { return graph::neighbor_info{graph::target_id(g, e), e}; })}`.
 5. **`template <typename G> auto incidence(G&& g, graph::vertex_id_t<G> uid) -> decltype(auto)`:**
    - Returns `incidence_view{graph::edges(g, uid) | std::views::transform([&g](const auto& e) { return graph::neighbor_info{graph::target_id(g, e), e}; })}`.
-6. template <typename G, typename U> auto neighbors(G&& g, const U& u) -> decltype(auto):
-	• Returns graph::edges(g, u) | std::views::transform([&g](const auto& e) { return graph::target_id(g, e); }).
+6. **template <typename G, typename U> auto neighbors(G&& g, const U& u) -> decltype(auto):**
+   - Returns graph::edges(g, u) | std::views::transform([&g](const auto& e) { return graph::target_id(g, e); }).
 7. **`template <typename G> auto edgelist(G&& g) -> decltype(auto)`:**
    - Never pass arguments to `std::views::join`. First pipe `graph::vertices(g)` into `std::views::transform([&g](const auto& u) { return graph::edges(g, u) | std::views::transform([&g, &u](const auto& e) { return graph::edge_info{graph::vertex_id(g, u), graph::target_id(g, e), e}; }); })`, and then pipe that result into `| std::views::join`.
 Close `namespace graph::views` (`} // namespace graph::views`).
