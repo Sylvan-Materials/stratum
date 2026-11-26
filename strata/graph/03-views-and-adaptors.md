@@ -75,6 +75,7 @@ Open `namespace graph::views {` and define these range views using `std::views::
    - Returns `graph::edges(g, u) | std::views::transform([&g](const auto& e) { return graph::target_id(g, e); })`.
 6. **`template <typename G> auto edgelist(G&& g) -> decltype(auto)`:**
    - Never pass arguments to `std::views::join`. First pipe `graph::vertices(g)` into `std::views::transform([&g](const auto& u) { return graph::edges(g, u) | std::views::transform([&g, &u](const auto& e) { return graph::edge_info{graph::vertex_id(g, u), graph::target_id(g, e), e}; }); })`, and then pipe that result into `| std::views::join`.
+7. **Nested `::iterator` Type Alias on `incidence`:** Ensure the view type returned by `graph::views::incidence` defines a public `using iterator = ...;` member type alias (e.g. by wrapping the transformed range in a lightweight `incidence_view<Range>` inheriting from `std::ranges::view_interface<incidence_view<Range>>` with `using iterator = std::ranges::iterator_t<Range>;`, `begin()`, and `end()`), so callers querying `decltype(graph::views::incidence(g, u))::iterator` compile cleanly.
 Close `namespace graph::views` (`} // namespace graph::views`).
 
 
