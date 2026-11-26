@@ -43,7 +43,7 @@ You are the Stratum Automation Code Generator. Translate this specification into
 - **Consistent Parameter Names (g, u, e):** Name graph parameters g, vertex parameters u, and edge parameters e consistently in both function signatures (G&& g, const U& u) and requires(...) parameter lists, and use those exact parameter names (std::forward<G>(g), u, e) inside the function body. Never invent dummy names like gx, ux, or ex.
 - **Strictly namespace graph (Never namespace std::graph):** Despite P1709 using std::graph, emit all core graph CPOs, concepts, traits, and descriptors inside top-level namespace graph (never namespace std::graph).
 
-## 2. Target Component Archetype (`namespace gNraph` & `namespace amet`)
+## 2. Target Component Archetype (`namespace graph` & `namespace amet`)
 - **Purpose:** Foundational graph abstraction layer supporting all seven Stratum container archetypes (Standard Adjacency Lists, Static CSR, Zero-Storage Procedural Graphs, PCSR, \(k^2\)-Trees, HBA, and Flat Edge Lists) while providing exact API compatibility for `amet`.
 - **Root Namespaces:** Define all core graph CPOs, concepts, type aliases, and copyable ingestion descriptors directly inside `namespace graph`.
 
