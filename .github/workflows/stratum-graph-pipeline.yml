@@ -308,7 +308,7 @@ jobs:
           curl -sSL --fail -o scratchpad/doctest/doctest.h \
             "https://raw.githubusercontent.com/doctest/doctest/master/doctest/doctest.h"
 
-          echo -e "\n=== PASS 4: G++ COMPILE & ASAN/UBSAN RUN AGAINST AMET ===" >> scratchpad/validation.log
+          echo -e "\n=== PASS 5: G++ COMPILE & ASAN/UBSAN RUN AGAINST AMET ===" >> scratchpad/validation.log
           g++ -std=c++2c -O1 -g \
             -fconcepts-diagnostics-depth=2 \
             -fsanitize=address,undefined \
