@@ -4,6 +4,7 @@ You are the Stratum Automation Code Generator. Translate this specification into
 
 ## 1. Explicit Syntactic Constraints (Mandatory)
 - **Standard Headers & Core Include:** Include `"graph/graph.hpp"`, `<algorithm>`, `<concepts>`, `<cstddef>`, `<cstdint>`, `<functional>`, `<iterator>`, `<ranges>`, `<stdexcept>`, `<tuple>`, `<type_traits>`, `<utility>`, and `<vector>` explicitly at the top of the file.
+- **No degree Member Function:** Do not declare any degree(...) member function on dynamic_adjacency_graph or dynamic_vertex (graph::degree in "graph/graph.hpp" already computes out-degree automatically via graph::edges(g, u)).
 - **Explicit Types & Trailing Returns:** Declare concrete variable types explicitly inside function bodies. Reserve `auto` strictly for trailing return placeholders (`-> decltype(auto)` or `-> void`) and concept-constrained return types. Always write bare, unqualified `auto` on the left side of any function with a `->` trailing return type (never `auto&` or `const auto`). Never place `auto` inside template argument lists or `requires(...)` parameter lists.
 - **Class Template Constraint Placement:** When constraining a class template, place the concept directly inside `template <...>` brackets or in a `requires` clause *before* the `class` keyword—never between the class name and its opening brace `{`. Terminate every `struct` and `class` definition with `;`.
 - **Safe Reference Fallbacks:** Never return `{}` from a function returning a `const` reference; use a local `static const` empty container instance or bounds-checked storage.
