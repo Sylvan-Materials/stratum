@@ -73,13 +73,16 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
   1. `auto reserve_vertices(std::size_t count) -> void` — calls `vertices_.reserve(count);`.
   2. `auto reserve_edges([[maybe_unused]] std::size_t count) -> void` — no-op using `[[maybe_unused]]`.
   3. **`load_vertices(VRng&& vrng, VProj vproj = {}) -> void`:**
-     - Iterates over every element `elem` in `vrng` and invokes `auto projected = std::invoke(vproj, elem);`.
-     - Declare vertex_id_type id{}; (in load_vertices) and vertex_id_type src{}; vertex_id_type dst{}; (in load_edges) before the if constexpr chain so they remain in scope after the branches close.
-     - Detect the shape of `projected` strictly using structural `if constexpr (requires { ... })` checks (never `std::is_same_v` on external trait names):
-      - `if constexpr (requires { projected.id; })` — extracts `vertex_id_type id = static_cast<vertex_id_type>(projected.id);` (and assigns `projected.value` when `!std::is_void_v<vertex_value_type>` and `requires { projected.value; }`).
-      - `else if constexpr (requires { std::get<0>(projected); })` — extracts `vertex_id_type id = static_cast<vertex_id_type>(std::get<0>(projected));` (and assigns `std::get<1>(projected)` when `!std::is_void_v<vertex_value_type>`).
-      - `else` — treats `projected` directly as `vertex_id_type id = static_cast<vertex_id_type>(projected);`.
-      - Computes `std::size_t idx = static_cast<std::size_t>(id);`. Check **`if (idx >= vertices_.size()) { vertices_.resize(idx + 1); }`** (CRITICAL: always compare `idx >= vertices_.size()`, **never** `idx >= vertices_.capacity()`—calling `reserve_vertices(N)` beforehand sets `capacity() >= N` while `size()` is still `0`, so writing to `vertices_[idx]` without `vertices_.resize(idx + 1)` writes into unconstructed `0xbe` memory and crashes ASan!).
+    - Iterates over every element `elem` in `vrng`, invokes `auto projected = std::invoke(vproj, elem);`, and declares `vertex_id_type id{};` before the `if constexpr` chain so it remains in scope after the branches close.
+    - **Step 1 (Extract `id` ONLY — do NOT index `vertices_[id]` inside this `if constexpr` chain):**
+      - `if constexpr (requires { projected.id; })` — sets `id = static_cast<vertex_id_type>(projected.id);`.
+      - `else if constexpr (requires { std::get<0>(projected); })` — sets `id = static_cast<vertex_id_type>(std::get<0>(projected));`.
+      - `else` — sets `id = static_cast<vertex_id_type>(projected);`.
+    - **Step 2 (Resize `vertices_` FIRST):**
+      - Compute `std::size_t idx = static_cast<std::size_t>(id);` and execute `if (idx >= vertices_.size()) { vertices_.resize(idx + 1); }` (comparing against `vertices_.size()`, never `vertices_.capacity()`) **before** accessing `vertices_[idx]`.
+    - **Step 3 (Populate `vertices_[idx]` AFTER resize):**
+      - Assign `vertices_[idx].id_ = id;`.
+      - `if constexpr (!std::is_void_v<vertex_value_type>)` — if `requires { projected.value; }`, assign `vertices_[idx].value_ = std::move(projected.value);`; else if `requires { std::get<1>(projected); }`, assign `vertices_[idx].value_ = std::move(std::get<1>(projected));`.
 - **Const-Correct `edges` Overloads:** Never write `auto edges(const vertex_type& u) -> std::vector<edge_type>&` (returning a non-const reference from a `const vertex_type&` parameter discards `const` qualifiers). Any `edges` overload accepting `const vertex_type&` must return `const std::vector<edge_type>&` (or `decltype(auto)`).
   
   4. **`load_edges(ERng&& erng, EProj eproj = {}) -> void`:**
