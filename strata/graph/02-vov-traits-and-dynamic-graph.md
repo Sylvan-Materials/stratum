@@ -61,6 +61,9 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
   - `using edge_type = dynamic_edge<vertex_id_type, edge_value_type>;`
 - **Primary Storage:**
   - `std::vector<vertex_type> vertices_{};` indexed directly by `std::size_t idx = static_cast<std::size_t>(id);`, resizing `vertices_` whenever `idx >= vertices_.size()`.
+  - **Safe Container Storage & Initialization (ASan-Clean):**
+    - Inside `dynamic_vertex` and `dynamic_edge`, always value-initialize payload members (`VV value{};` and `EV value{};` — never leave `VV value;` uninitialized).
+    - Inside `load_vertices` and `load_edges`, manage `vertices_` exclusively via standard `std::vector` operations (`vertices_.resize(new_size);` followed by member assignment `vertices_[id].id = id; vertices_[id].value = ...;`) — never use raw `operator new`, `std::malloc`, or unconstructed `std::allocator::allocate`.
 - **Capacity & Bulk Ingestion Methods (Matching `amet/test/src/test.cpp`):**
   1. `auto reserve_vertices(std::size_t count) -> void` — calls `vertices_.reserve(count);`.
   2. `auto reserve_edges([[maybe_unused]] std::size_t count) -> void` — no-op using `[[maybe_unused]]`.
