@@ -39,7 +39,7 @@ Define these two struct templates at namespace scope immediately after `vov_grap
 - **`template <typename VId, typename EV = void> struct dynamic_edge`:**
   - Primary template stores `VId source_id_{}; VId target_id_{}; EV value_{};` and provides member accessors `source_id()`, `target_id()`, and mutable/`const` `value()`.
   - Partial specialization `template <typename VId> struct dynamic_edge<VId, void>` stores only `VId source_id_{}; VId target_id_{};` and provides `source_id()` and `target_id()`.
-- **`template <typename VId, typename VV = void, typename EV = void> struct dynamic_vertex`:**
+  - **`template <typename VId, typename VV = void, typename EV = void> struct dynamic_vertex`:**
   - Primary template stores `VId id_{}; VV value_{}; std::vector<dynamic_edge<VId, EV>> edges_{};` and provides member accessors `id()`, mutable/`const` `value()`, and mutable/`const` `edges()`.
   - Partial specialization `template <typename VId, typename EV> struct dynamic_vertex<VId, void, EV>` stores only `VId id_{}; std::vector<dynamic_edge<VId, EV>> edges_{};` and provides `id()` and mutable/`const` `edges()`.
   - Keep `dynamic_edge` and `dynamic_vertex` as plain C++26 aggregate structs (do **not** declare custom constructors or variadic `Args...` constructors; aggregate brace initialization `{...}` works automatically).
@@ -79,7 +79,7 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
        - `if constexpr (requires { projected.id; })` — extracts `vertex_id_type id = static_cast<vertex_id_type>(projected.id);` (and assigns `projected.value` when `!std::is_void_v<vertex_value_type>` and `requires { projected.value; }`).
        - `else if constexpr (requires { std::get<0>(projected); })` — extracts `vertex_id_type id = static_cast<vertex_id_type>(std::get<0>(projected));` (and assigns `std::get<1>(projected)` when `!std::is_void_v<vertex_value_type>`).
        - `else` — treats `projected` directly as `vertex_id_type id = static_cast<vertex_id_type>(projected);`.
-     - Computes `std::size_t idx = static_cast<std::size_t>(id);`, resizes `vertices_` if `idx >= vertices_.size()`, and assigns `vertices_[idx].id_ = id;`.
+     - Computes `std::size_t idx = static_cast<std::size_t>(id);`. If `idx >= vertices_.size()`, you MUST call `vertices_.resize(idx + 1);` (CRITICAL: never call `vertices_.reserve(...)` to grow `vertices_`—`.reserve()` leaves elements unconstructed and causes an immediate ASan SEGV when indexing `vertices_[idx]`). Then assign `vertices_[idx].id_ = id;` and, when `!std::is_void_v<vertex_value_type>`, copy `vertices_[idx].value_ = projected.value;` (do not `std::move` from `const` references).
 - **Const-Correct `edges` Overloads:** Never write `auto edges(const vertex_type& u) -> std::vector<edge_type>&` (returning a non-const reference from a `const vertex_type&` parameter discards `const` qualifiers). Any `edges` overload accepting `const vertex_type&` must return `const std::vector<edge_type>&` (or `decltype(auto)`).
   
   4. **`load_edges(ERng&& erng, EProj eproj = {}) -> void`:**
