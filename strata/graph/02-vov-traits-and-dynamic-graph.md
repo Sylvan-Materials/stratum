@@ -97,9 +97,10 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
   - `auto edge_value(edge_type& e) -> edge_value_type& and auto edge_value(const edge_type& e) const -> const edge_value_type& returning e.value() (enabled via requires (!std::is_void_v<edge_value_type>);` do not generate any other edge_value overloads).
   - `auto size() const noexcept -> std::size_t` (returns `vertices_.size()`)
   - `auto operator[](vertex_id_type uid) -> vertex_type&` and `const` overload.
-- **ADL Hidden Friends (Inside `dynamic_adjacency_graph`):**
-  - `friend constexpr auto num_vertices(const dynamic_adjacency_graph& g) noexcept -> std::size_t { return g.vertices_.size(); }`
-  - `friend constexpr auto num_edges(const dynamic_adjacency_graph& g) noexcept -> std::size_t` (summing `v.edges_.size()` across `g.vertices_`).
+- **ADL Hidden Friends (Strictly Inside `public:` Body of `class dynamic_adjacency_graph` Before `};`):**
+  - Declare both hidden `friend` functions inside the `public:` section of `class dynamic_adjacency_graph` **before** its closing `};` (never after `};`):
+    - `friend constexpr auto num_vertices(const dynamic_adjacency_graph& g) noexcept -> std::size_t { return g.vertices_.size(); }`
+    - `friend constexpr auto num_edges(const dynamic_adjacency_graph& g) noexcept -> std::size_t` (summing `v.edges_.size()` across `g.vertices_`).
 ### Container & CPO Edge Traversal Rules
   1. **Const-Correct Accessors (C++23/2c Compatible):**
     - Never return a non-const `std::vector<edge_type>&` from an accessor taking `const vertex_type&`.
