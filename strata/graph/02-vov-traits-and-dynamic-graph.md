@@ -90,6 +90,7 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
   - `auto vertices() -> std::vector<vertex_type>&` and `auto vertices() const -> const std::vector<vertex_type>&`
   - `auto edges(const vertex_type& u) -> std::vector<edge_type>&` and `auto edges(const vertex_type& u) const -> const std::vector<edge_type>&`
   - `auto edges(vertex_id_type uid) -> std::vector<edge_type>&` and `auto edges(vertex_id_type uid) const -> const std::vector<edge_type>&`
+  - auto edges(const vertex_type& u) const -> const std::vector<edge_type>& (never return non-const std::vector<edge_type>&).
   - `auto vertex_id(const vertex_type& u) const noexcept -> vertex_id_type` (returns `u.id()`)
   - `auto target_id(const edge_type& e) const noexcept -> vertex_id_type` (returns `e.target_id()`)
   - `auto source_id(const edge_type& e) const noexcept -> vertex_id_type` (returns `e.source_id()`)

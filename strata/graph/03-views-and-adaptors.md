@@ -7,6 +7,7 @@ You are the Stratum Automation Code Generator. Translate this specification into
 - **Explicit Types & Trailing Returns:** Declare concrete variable types explicitly inside function bodies. Reserve `auto` strictly for trailing return placeholders (`-> decltype(auto)` or `-> auto`) and concept-constrained return types. Never write `const auto` before a function name, and never place `auto` inside template argument lists or `requires(...)` parameter lists.
 - **Top-Level Struct Templates Only:** Declare `vertex_info`, `neighbor_info`, and `edge_info` directly at namespace scope inside `namespace graph` using explicit `template <...>` headers—never wrap them inside an outer non-template struct.
 - **Namespace Hygiene:** Always close `namespace graph` (`} // namespace graph`) before opening `namespace std`, and close `namespace std` (`} // namespace std`) before opening `namespace graph::views`. Never open `namespace std` inside `namespace graph`.
+- **Use if constexpr in get<I>() (Never Ternary ?:):** Inside vertex_info::get(), neighbor_info::get(), and edge_info::get(), always use if constexpr (I == 0) return ...; else if constexpr (I == 1) return ...; — never use the runtime ternary operator I == 0 ? id : vertex, which fails to compile when member types differ.
 
 ## 2. Target Component Archetype (`namespace graph::views` & `namespace graph`)
 - **Purpose:** Non-owning range views (`vertexlist`, `incidence`, `neighbors`, `edgelist`) and branch-pruning graph adaptor (`filtered_graph`) matching `stdgraph/P1709` and `amet`'s traversal requirements.
