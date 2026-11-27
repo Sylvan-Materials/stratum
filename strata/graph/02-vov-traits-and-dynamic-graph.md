@@ -39,11 +39,11 @@ Define these two struct templates at namespace scope immediately after `vov_grap
 - **`template <typename VId, typename EV = void> struct dynamic_edge`:**
   - Primary template stores `VId source_id_{}; VId target_id_{}; EV value_{};` and provides member accessors `source_id()`, `target_id()`, and mutable/`const` `value()`.
   - Partial specialization `template <typename VId> struct dynamic_edge<VId, void>` stores only `VId source_id_{}; VId target_id_{};` and provides `source_id()` and `target_id()`.
-  - **`template <typename VId, typename VV = void, typename EV = void> struct dynamic_vertex`:**
+- **`template <typename VId, typename VV = void, typename EV = void> struct dynamic_vertex`:**
   - Primary template stores `VId id_{}; VV value_{}; std::vector<dynamic_edge<VId, EV>> edges_{};` and provides member accessors `id()`, mutable/`const` `value()`, and mutable/`const` `edges()`.
   - Partial specialization `template <typename VId, typename EV> struct dynamic_vertex<VId, void, EV>` stores only `VId id_{}; std::vector<dynamic_edge<VId, EV>> edges_{};` and provides `id()` and mutable/`const` `edges()`.
   - Keep `dynamic_edge` and `dynamic_vertex` as plain C++26 aggregate structs (do **not** declare custom constructors or variadic `Args...` constructors; aggregate brace initialization `{...}` works automatically).
-
+- **Default Constructible (Required by `std::vector::resize`):** Keep `dynamic_edge` and `dynamic_vertex` as plain C++26 aggregate structs with **zero user-declared constructors** (do **not** declare `dynamic_vertex(VId)` or any other constructor; if any constructor is emitted, you MUST also declare `dynamic_vertex() = default;`).
 
 ### 3. `dynamic_adjacency_graph` Class Template
 Define:
