@@ -97,9 +97,9 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
   - `auto vertices() -> std::vector<vertex_type>&` and `auto vertices() const -> const std::vector<vertex_type>&`
   - `auto edges(vertex_type& u) -> std::vector<edge_type>&` and `auto edges(const vertex_type& u) const -> const std::vector<edge_type>&`
   - `auto edges(vertex_id_type uid) -> std::vector<edge_type>&` and `auto edges(vertex_id_type uid) const -> const std::vector<edge_type>&`
-  - `auto vertex_id(const vertex_type& u) const noexcept -> vertex_id_type` (returns `u.id()`)
-  - `auto target_id(const edge_type& e) const noexcept -> vertex_id_type` (returns `e.target_id()`)
-  - `auto source_id(const edge_type& e) const noexcept -> vertex_id_type` (returns `e.source_id()`)
+  - `auto vertex_id(const vertex_type& u) const noexcept -> vertex_id_type { return u.id(); }` (CRITICAL: never omit `vertex_id(u)`—`graph::vertex_id_t<G>` depends on it!)
+  - `auto target_id(const edge_type& e) const noexcept -> vertex_id_type { return e.target_id(); }`
+  - `auto source_id(const edge_type& e) const noexcept -> vertex_id_type { return e.source_id(); }`
   - `auto vertex_value(vertex_type& u) -> vertex_value_type&` and `const` overload (enabled via `requires (!std::is_void_v<vertex_value_type>)`)
   - `auto edge_value(edge_type& e) -> edge_value_type& and auto edge_value(const edge_type& e) const -> const edge_value_type& returning e.value() (enabled via requires (!std::is_void_v<edge_value_type>);` do not generate any other edge_value overloads).
   - `auto size() const noexcept -> std::size_t` (returns `vertices_.size()`)
