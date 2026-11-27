@@ -91,6 +91,7 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
        - `if constexpr (requires { projected.source_id; projected.target_id; })` — extracts `src` and `dst` (plus `projected.value` when `!std::is_void_v<edge_value_type>` and `requires { projected.value; }`).
        - `else if constexpr (requires { std::get<0>(projected); std::get<1>(projected); })` — extracts `src` and `dst` via `std::get<0>` and `std::get<1>` (plus `std::get<2>` when `!std::is_void_v<edge_value_type>`).
      - Resizes `vertices_` to hold `std::max(src_idx, dst_idx) + 1`, sets `vertices_[src_idx].id_ = src` and `vertices_[dst_idx].id_ = dst`, and pushes the edge onto `vertices_[src_idx].edges_`.
+     - Compute `std::size_t src_idx = static_cast<std::size_t>(src);`, `std::size_t dst_idx = static_cast<std::size_t>(dst);`, and `std::size_t max_idx = std::max(src_idx, dst_idx);`. If `max_idx >= vertices_.size()`, call `vertices_.resize(max_idx + 1);` **before** indexing `vertices_[src_idx]` or `vertices_[dst_idx]` (never reference `idx` inside `load_edges`).
      - **Directedness:** Always insert the projected edge strictly once (`src -> dst`) without duplicating reverse edges.
 - **CPO Customization Hooks (Member Functions Inside `dynamic_adjacency_graph`):**
   - `auto vertices() -> std::vector<vertex_type>&` and `auto vertices() const -> const std::vector<vertex_type>&`
