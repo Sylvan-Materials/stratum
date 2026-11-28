@@ -96,7 +96,7 @@ Inside `dynamic_adjacency_graph`, refer to member types strictly via `vertex_id_
 - **CPO Customization Hooks (Member Functions Inside `dynamic_adjacency_graph`):**
   - `auto vertices() -> std::vector<vertex_type>&` and `auto vertices() const -> const std::vector<vertex_type>&`
   - `auto edges(vertex_type& u) -> std::vector<edge_type>&` and `auto edges(const vertex_type& u) const -> const std::vector<edge_type>&`
-  - `auto edges(vertex_id_type uid) -> std::vector<edge_type>&` and `auto edges(vertex_id_type uid) const -> const std::vector<edge_type>&` (CRITICAL: always return by reference &, never by value -> std::vector<edge_type>, so edge iterators remain valid across calls!).
+  - `auto edges(vertex_id_type uid) -> std::vector<edge_type>&` and `auto edges(vertex_id_type uid) const -> const std::vector<edge_type>&`
   - `auto vertex_id(const vertex_type& u) const noexcept -> vertex_id_type { return u.id(); }` (CRITICAL: never omit `vertex_id(u)`—`graph::vertex_id_t<G>` depends on it!)
   - `auto target_id(const edge_type& e) const noexcept -> vertex_id_type { return e.target_id(); }`
   - `auto source_id(const edge_type& e) const noexcept -> vertex_id_type { return e.source_id(); }`
